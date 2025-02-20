@@ -23,8 +23,15 @@ const Page = () => {
         password,
       });
 
-      console.log(response.data);
-    } catch (error) {}
+      console.log("API Response:", response.data); // Debugging
+
+      sessionStorage.setItem("user", JSON.stringify(response.data));
+    } catch (error) {
+      console.log(
+        "Login failed:",
+        error.response ? error.response.data : error.message
+      );
+    }
   };
 
   return (
