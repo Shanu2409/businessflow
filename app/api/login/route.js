@@ -1,0 +1,25 @@
+import connection from "@/lib/mongodb";
+import User from "@/models/user";
+import { NextResponse, NextRequest } from "next/server";
+
+export async function POST(request) {
+  try {
+    await connection();
+
+    const { username, password } = await request.json();
+
+    const user = await User.findOne({ username, password });
+
+    if (!user) {
+      return NextResponse.json({ Message: "Not found" }, { status: 400 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json(
+      { Message: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
