@@ -29,7 +29,9 @@ const Page = () => {
 
       console.log("API Response:", response.data); // Debugging
 
-      sessionStorage.setItem("user", JSON.stringify(response.data));
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("user", JSON.stringify(response.data));
+      }
 
       toast.success("Login Successful");
 

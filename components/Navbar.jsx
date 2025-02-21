@@ -6,19 +6,26 @@ import { FiLogOut, FiMenu } from "react-icons/fi"; // Import icons
 import { toast } from "react-toastify";
 
 const Navbar = () => {
-  const [user, setUser] = useState(
-    JSON.parse(sessionStorage.getItem("user") || "null")
-  );
+  const [user, setUser] = useState({});
   const [menuOpen, setMenuOpen] = useState(false); // State for mobile menu
   const router = useRouter();
 
   const handleLogout = () => {
-    sessionStorage.removeItem("user");
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("user");
+    }
     setUser(null);
     router.push("/login");
 
     toast("Logout successful", { type: "success" });
   };
+
+  React.useEffect(() => {
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   return (
     <nav className="px-6 py-3 flex justify-between items-center text-white shadow-md bg-primary border-b-[10px] border-secondary px-10">
