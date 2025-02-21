@@ -1,10 +1,14 @@
 "use client";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 
 const Page = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  const router = useRouter();
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
@@ -26,11 +30,16 @@ const Page = () => {
       console.log("API Response:", response.data); // Debugging
 
       sessionStorage.setItem("user", JSON.stringify(response.data));
+
+      toast.success("Login Successful");
+
+      router.push("/");
     } catch (error) {
       console.log(
         "Login failed:",
         error.response ? error.response.data : error.message
       );
+      toast.error("Something went wrong");
     }
   };
 

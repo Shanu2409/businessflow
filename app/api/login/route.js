@@ -1,5 +1,5 @@
 import connection from "@/lib/mongodb";
-import User from "@/models/user";
+import Account from "@/models/AccountUser";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
@@ -8,7 +8,7 @@ export async function POST(request) {
 
     const { username, password } = await request.json();
 
-    const user = await User.findOne({ username, password });
+    const user = await Account.findOne({ username, password });
 
     if (!user) {
       return NextResponse.json({ Message: "Not found" }, { status: 400 });

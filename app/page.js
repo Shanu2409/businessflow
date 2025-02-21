@@ -1,5 +1,15 @@
-import Image from "next/image";
+import HomeMenu from "@/components/HomeMenu";
+import Navbar from "@/components/Navbar";
+import React from "react";
 
-export default function Home() {
-  return <div>Next Appliaction</div>;
-}
+const page = () => {
+  return (
+    <>
+      <Navbar />
+
+      <HomeMenu />
+    </>
+  );
+};
+
+export default page;
