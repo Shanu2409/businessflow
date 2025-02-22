@@ -1,15 +1,21 @@
 "use client";
 
+import UserContext from "@/lib/UserContext";
 import React, { useState } from "react";
 
 const HomeMenu = () => {
+  const user = UserContext();
   // Menu data
   const menuItems = [
-    { title: "BANKS", link: "/banks" },
-    { title: "TRANSACTIONS", link: "/transactions" },
-    { title: "USERS", link: "/users" },
-    { title: "WEBSITES", link: "/websites" },
+    { title: "BANKS", link: "/bank" },
+    { title: "TRANSACTIONS", link: "/transaction" },
+    { title: "USERS", link: "/user" },
+    { title: "WEBSITES", link: "/website" },
   ];
+
+  if (user?.type === "admin") {
+    menuItems.push({ title: "Accounts", link: "/accounts" });
+  }
 
   // State to track collapsed items
   const [collapsed, setCollapsed] = useState(

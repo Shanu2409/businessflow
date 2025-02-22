@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { FiLogOut, FiMenu } from "react-icons/fi"; // Import icons
 import { toast } from "react-toastify";
-import logo from "../app/logo.png";
 
 const Navbar = () => {
   const [user, setUser] = useState({});
@@ -32,8 +31,14 @@ const Navbar = () => {
     <nav className="px-6 py-3 flex justify-between items-center text-white shadow-md bg-primary border-b-[10px] border-secondary px-10">
       {/* Left: Logo */}
       <div className="flex items-center space-x-2">
-        <img src={logo} alt="Logo" className="w-8 h-8" />
-        <span className="text-xl font-semibold">BusinessFlow</span>
+        <img
+          src={
+            "https://raw.githubusercontent.com/Shanu2409/businessflow/ef765d0c96eff28f4ef1db75c3778574fcba69ca/app/logo.png"
+          }
+          alt="Logo"
+          width={70}
+        />
+        {/* <span className="text-xl font-semibold">BusinessFlow</span> */}
       </div>
 
       {/* Mobile Menu Button */}

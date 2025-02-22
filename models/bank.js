@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 
 const bankSchema = new mongoose.Schema({
-  _id: { type: String, required: true, unique: true },
-  bank_name: { type: String, required: true, unique: true },
-  ifsc_code: { type: String, required: true },
-  current_balance: { type: Number, default: true },
+  bank_name: { type: String, unique: true },
+  ifsc_code: { type: String },
+  account_number: { type: String },
+  current_balance: { type: Number, default: 0.0 },
+  created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
   ttlExpiresAt: { type: Date, expires: "3600s" },
 });

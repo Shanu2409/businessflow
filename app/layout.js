@@ -8,7 +8,7 @@ export default function RootLayout({ children }) {
       <body>
         <AuthContext>{children}</AuthContext>
         <ToastContainer
-          autoClose={3000}
+          autoClose={2000}
           theme="colored"
           position="top-center"
         />
