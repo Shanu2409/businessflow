@@ -21,9 +21,7 @@ export const Table = ({
   const itemsPerPage = 20;
 
   // New state variable for collapsing the Filter & Sorting section
-  const [isFilterOpen, setIsFilterOpen] = useState(
-    () => window.innerWidth > 768
-  );
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Update sortedRows when rows prop changes
   useEffect(() => {
