@@ -5,13 +5,19 @@ import Navbar from "@/components/Navbar";
 import React, { useEffect, useState } from "react";
 import { Table } from "@/components/Table";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { useSearchParams } from "next/navigation";
 
 const Page = () => {
-  const [showAddBankForm, setShowAddBankForm] = useState(false);
+  const searchParams = useSearchParams();
+  const [showAddBankForm, setShowAddBankForm] = useState(
+    searchParams.get("add") == "true" ? true : false
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
   const [data, setData] = useState([]);
+  const [editData, setEditData] = useState(null);
 
   const fetchBankData = async () => {
     try {
@@ -24,6 +30,25 @@ const Page = () => {
     } catch (error) {
       console.error("Error fetching bank data:", error);
     }
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this bank account?")) {
+      try {
+        const response = await axios.delete(`/api/banks/${id}`);
+
+        toast.success(response?.data?.message);
+
+        fetchBankData();
+      } catch (error) {
+        console.error("Error deleting bank:", error);
+      }
+    }
+  };
+
+  const handleIsEdit = (data) => {
+    setEditData(data);
+    setShowAddBankForm(true);
   };
 
   useEffect(() => {
@@ -41,7 +66,10 @@ const Page = () => {
           </h1>
           <button
             className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
-            onClick={() => setShowAddBankForm(!showAddBankForm)}
+            onClick={() => {
+              setShowAddBankForm(!showAddBankForm);
+              setEditData(null);
+            }}
           >
             {showAddBankForm ? "Cancel" : "Add Bank"}
           </button>
@@ -51,6 +79,7 @@ const Page = () => {
         {showAddBankForm && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <AddBankForm
+              editData={editData}
               setShowAddBankForm={setShowAddBankForm}
               fetchData={fetchBankData}
             />
@@ -67,6 +96,8 @@ const Page = () => {
             showChecknRecheck={false}
             page={page}
             setPage={setPage}
+            handleDelete={handleDelete}
+            handleIsEdit={handleIsEdit}
           />
         </div>
       </div>

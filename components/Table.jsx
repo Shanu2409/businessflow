@@ -4,6 +4,8 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaChevronUp,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 
 export const Table = ({
@@ -16,6 +18,8 @@ export const Table = ({
   changeRecheckStatus,
   page,
   setPage,
+  handleDelete,
+  handleIsEdit,
 }) => {
   const [sortedRows, setSortedRows] = useState([...rows]);
   const itemsPerPage = 20;
@@ -100,6 +104,10 @@ export const Table = ({
                       {col.replace("_", " ").toUpperCase()}
                     </th>
                   ))}
+                  {/* Actions column */}
+                  <th className="px-2 py-1 border border-gray-600 whitespace-nowrap">
+                    ACTIONS
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -138,6 +146,21 @@ export const Table = ({
                         {formatEntry(row[col], col)}
                       </td>
                     ))}
+                    {/* Actions cell */}
+                    <td className="px-2 py-1 border border-gray-600 whitespace-nowrap">
+                      <button
+                        onClick={() => handleIsEdit(row)}
+                        className="text-blue-500 hover:text-blue-700 mr-2"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(row.bank_name)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -179,8 +202,6 @@ export const Table = ({
       </div>
       {/* Filter & Sorting Sidebar */}
       <div className="w-full md:w-1/4 mt-4 md:mt-0">
-        {/* Toggle button appears on mobile */}
-
         <div className="p-4 bg-white rounded-lg shadow-md">
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -193,7 +214,6 @@ export const Table = ({
             )}
             <span className="text-lg font-semibold">Filter & Sort</span>
           </button>
-
           {isFilterOpen && (
             <div>
               <div className="mb-4">

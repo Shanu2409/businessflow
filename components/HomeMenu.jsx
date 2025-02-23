@@ -61,7 +61,7 @@ const HomeMenu = () => {
               </a>
               <div className="flex space-x-3">
                 <a
-                  href={`${item.link}/add`}
+                  href={`${item.link}?add=true`}
                   className="text-green-600 hover:underline text-sm"
                 >
                   + Add
