@@ -14,6 +14,6 @@ const transactionSchema = new mongoose.Schema({
   ttlExpiresAt: { type: Date, expires: "3600s" },
 });
 
-const Website =
+const Transaction =
   mongoose.models.website || mongoose.model("website", transactionSchema);
-export default Website;
+export default Transaction;

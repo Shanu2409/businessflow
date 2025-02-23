@@ -155,7 +155,13 @@ export const Table = ({
                         <FaEdit />
                       </button>
                       <button
-                        onClick={() => handleDelete(row.bank_name)}
+                        onClick={() =>
+                          handleDelete(
+                            Object.entries(row).find(([key, value]) =>
+                              key.includes("name")
+                            )[1]
+                          )
+                        }
                         className="text-red-500 hover:text-red-700"
                       >
                         <FaTrash />

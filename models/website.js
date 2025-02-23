@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const websiteSchema = new mongoose.Schema({
-  _id: { type: String, required: true, unique: true },
-  website_name: { type: String, required: true, unique: true },
-  url: { type: String, required: true },
-  current_balance: { type: Number, require: true },
+  website_name: { type: String, unique: true },
+  url: { type: String },
+  current_balance: { type: Number },
+  created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
   ttlExpiresAt: { type: Date, expires: "3600s" },
 });
