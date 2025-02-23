@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 
 const HomeMenu = () => {
-  const user = JSON.parse(sessionStorage.getItem("user"));
+  let user;
+
   // Menu data
   const menuItems = [
     { title: "BANKS", link: "/bank" },
@@ -11,6 +12,14 @@ const HomeMenu = () => {
     { title: "USERS", link: "/user" },
     { title: "WEBSITES", link: "/website" },
   ];
+
+  if (typeof window !== "undefined") {
+    user = sessionStorage.getItem("user");
+
+    if (user?.type === "admin") {
+      menuItems.push({ title: "Accounts", link: "/accounts" });
+    }
+  }
 
   if (user?.type === "admin") {
     menuItems.push({ title: "Accounts", link: "/accounts" });
