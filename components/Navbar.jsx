@@ -1,14 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
-import { FiLogOut, FiMenu } from "react-icons/fi"; // Import icons
+import React, { useState, useEffect } from "react";
+import { FiLogOut, FiMenu } from "react-icons/fi";
 import { toast } from "react-toastify";
 
 const Navbar = () => {
   const [user, setUser] = useState({});
-  const [menuOpen, setMenuOpen] = useState(false); // State for mobile menu
+  const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+
+  // Routing buttons for mobile dropdown
+  const mobileMenuItems = [
+    { title: "BANKS", link: "/bank" },
+    { title: "TRANSACTIONS", link: "/transaction" },
+    { title: "USERS", link: "/user" },
+    { title: "WEBSITES", link: "/website" },
+  ];
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -16,11 +24,10 @@ const Navbar = () => {
     }
     setUser(null);
     router.push("/login");
-
     toast("Logout successful", { type: "success" });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -28,17 +35,15 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="px-6 py-3 flex justify-between items-center text-white shadow-md bg-primary border-b-[10px] border-secondary px-10">
+    <nav className="px-6 py-3 flex justify-between items-center text-white shadow-md bg-primary border-b-[10px] border-secondary">
       {/* Left: Logo */}
       <div className="flex items-center space-x-2">
         <img
-          src={
-            "https://raw.githubusercontent.com/Shanu2409/businessflow/ef765d0c96eff28f4ef1db75c3778574fcba69ca/app/logo.png"
-          }
+          src="https://raw.githubusercontent.com/Shanu2409/businessflow/refs/heads/master/assets/logo.png"
           alt="Logo"
-          width={70}
+          width={120}
+          onClick={() => router.push("/")}
         />
-        {/* <span className="text-xl font-semibold">BusinessFlow</span> */}
       </div>
 
       {/* Mobile Menu Button */}
@@ -72,8 +77,8 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
-        <div className="absolute top-14 right-6 bg-white shadow-md rounded-md w-48 py-3 flex flex-col lg:hidden">
-          <div className="flex items-center px-4 py-2">
+        <div className="absolute top-14 right-6 bg-white shadow-md rounded-md w-48 py-3 flex flex-col space-y-1 lg:hidden z-50">
+          <div className="flex items-center px-4 py-2 border-b border-gray-200">
             <img
               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
                 user?.username || "User"
@@ -83,9 +88,25 @@ const Navbar = () => {
             />
             <span className="ml-2 text-lg">{user?.username || "Guest"}</span>
           </div>
+          {/* Routing Buttons */}
+          {mobileMenuItems.map((item, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setMenuOpen(false);
+                router.push(item.link);
+              }}
+              className="px-4 py-2 text-gray-800 text-left hover:bg-gray-200 transition"
+            >
+              {item.title}
+            </button>
+          ))}
           <button
             className="flex items-center px-4 py-2 text-red-600 hover:bg-gray-200 transition"
-            onClick={handleLogout}
+            onClick={() => {
+              setMenuOpen(false);
+              handleLogout();
+            }}
           >
             <FiLogOut className="mr-2" />
             Logout

@@ -27,8 +27,6 @@ const Page = () => {
         password,
       });
 
-      console.log("API Response:", response.data); // Debugging
-
       if (typeof window !== "undefined") {
         sessionStorage.setItem("user", JSON.stringify(response.data));
       }

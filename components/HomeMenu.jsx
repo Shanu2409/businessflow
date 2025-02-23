@@ -1,10 +1,9 @@
 "use client";
 
-import UserContext from "@/lib/UserContext";
 import React, { useState } from "react";
 
 const HomeMenu = () => {
-  const user = UserContext();
+  const user = JSON.parse(sessionStorage.getItem("user"));
   // Menu data
   const menuItems = [
     { title: "BANKS", link: "/bank" },

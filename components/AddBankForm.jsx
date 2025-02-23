@@ -1,6 +1,5 @@
 "use client";
 
-import UserContext from "@/lib/UserContext";
 import axios from "axios";
 import { set } from "mongoose";
 import React, { useState } from "react";
@@ -12,7 +11,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
-const AddBankForm = ({ setShowAddBankForm }) => {
+const AddBankForm = ({ setShowAddBankForm, fetchData }) => {
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [ifscCode, setIfscCode] = useState("");
@@ -23,7 +22,7 @@ const AddBankForm = ({ setShowAddBankForm }) => {
 
     const user = JSON.parse(sessionStorage.getItem("user"));
 
-    const response = await axios.post("/api/bank", {
+    const response = await axios.post("/api/banks", {
       bank_name: bankName,
       account_number: accountNumber,
       ifsc_code: ifscCode,
@@ -34,11 +33,15 @@ const AddBankForm = ({ setShowAddBankForm }) => {
     console.log(response.data); // Debugging
 
     if (response.status !== 200) {
-      toast(response.data.message, { type: "error" });
+      console.error(response.data.message);
+      toast.error(response.data.message);
       return;
     }
 
-    toast(response.data.message, { type: "success" });
+    console.log(response.data.message);
+    toast.success(response.data.message);
+
+    fetchData();
 
     setBankName("");
     setAccountNumber("");
@@ -71,7 +74,6 @@ const AddBankForm = ({ setShowAddBankForm }) => {
           <FaRegCreditCard className="text-gray-600 mr-3" />
           <input
             className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
-            type="number"
             placeholder="Account Number"
             aria-label="Account Number"
             value={accountNumber}
