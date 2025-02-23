@@ -1,17 +1,17 @@
 "use client";
 
+import React, { useEffect, useState, Suspense } from "react";
 import AddBankForm from "@/components/AddBankForm";
 import Navbar from "@/components/Navbar";
-import React, { useEffect, useState } from "react";
 import { Table } from "@/components/Table";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
 
-const Page = () => {
+const PageContent = () => {
   const searchParams = useSearchParams();
   const [showAddBankForm, setShowAddBankForm] = useState(
-    searchParams.get("add") == "true" ? true : false
+    searchParams.get("add") === "true"
   );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -24,7 +24,6 @@ const Page = () => {
       const { data: responseData } = await axios.get(
         `/api/banks?search=${search}&page=${page}&limit=20`
       );
-
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
     } catch (error) {
@@ -36,9 +35,7 @@ const Page = () => {
     if (confirm("Are you sure you want to delete this bank account?")) {
       try {
         const response = await axios.delete(`/api/banks/${id}`);
-
         toast.success(response?.data?.message);
-
         fetchBankData();
       } catch (error) {
         console.error("Error deleting bank:", error);
@@ -105,4 +102,10 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading bank page...</div>}>
+      <PageContent />
+    </Suspense>
+  );
+}
