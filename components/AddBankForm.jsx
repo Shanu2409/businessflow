@@ -20,7 +20,11 @@ const AddBankForm = ({ setShowAddBankForm, fetchData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const user = JSON.parse(sessionStorage.getItem("user"));
+    let user = {};
+
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
 
     const response = await axios.post("/api/banks", {
       bank_name: bankName,
