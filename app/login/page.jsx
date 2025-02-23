@@ -1,4 +1,7 @@
 "use client";
+
+export const dynamic = "force-dynamic"; // Disable static prerendering
+
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
