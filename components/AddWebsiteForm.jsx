@@ -23,6 +23,21 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     }
   };
 
+  const fetchWebsiteList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/websites?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
+      }
+
+      console.log(responseData);
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -34,6 +49,7 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       });
       setShowAddWebsiteForm(false);
       fetchData();
+      fetchWebsiteList();
       return;
     }
 
@@ -58,6 +74,8 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
 
       toast.success(response.data.message);
       fetchData();
+      fetchWebsiteList();
+
       setWebsiteName("");
       setUrl("");
       setCurrentBalance("");
@@ -91,7 +109,8 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
             className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
             type="text"
             placeholder="Website Name"
-            disabled={!!editData}
+            disabled={editData}
+            style={{ cursor: editData ? "not-allowed" : "default" }}
             aria-label="Website Name"
             value={websiteName}
             onChange={(e) => setWebsiteName(e.target.value)}
@@ -115,7 +134,9 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
           <input
             className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
             type="number"
-            step="0.01"
+            step="0.1"
+            disabled={editData}
+            style={{ cursor: editData ? "not-allowed" : "default" }}
             placeholder="Current Balance"
             aria-label="Current Balance"
             value={currentBalance}

@@ -51,7 +51,7 @@ export async function GET(request) {
     };
 
     // Get the total count of documents matching the query
-    const totalData = await Bank.countDocuments();
+    const totalData = await Bank.countDocuments(query);
 
     // Get paginated bank data
     const banks = await Bank.find(query, { __v: 0, _id: 0 })

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 
 const HomeMenu = () => {
   let user;
@@ -14,16 +15,27 @@ const HomeMenu = () => {
   ];
 
   if (typeof window !== "undefined") {
-    user = sessionStorage.getItem("user");
-
-    if (user?.type === "admin") {
-      menuItems.push({ title: "Accounts", link: "/accounts" });
-    }
+    user = JSON.parse(sessionStorage.getItem("user"));
   }
 
-  if (user?.type === "admin") {
+  if (user?.type == "admin") {
     menuItems.push({ title: "Accounts", link: "/accounts" });
   }
+
+  const fetchWebsiteList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/websites?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
+      }
+
+      console.log(responseData);
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+  };
 
   // State to track collapsed items
   const [collapsed, setCollapsed] = useState(
@@ -34,6 +46,10 @@ const HomeMenu = () => {
   const toggleCollapse = (index) => {
     setCollapsed((prev) => ({ ...prev, [index]: !prev[index] }));
   };
+
+  useEffect(() => {
+    fetchWebsiteList();
+  }, []);
 
   return (
     <div className="p-6 max-w-lg mx-auto">
@@ -65,12 +81,6 @@ const HomeMenu = () => {
                   className="text-green-600 hover:underline text-sm"
                 >
                   + Add
-                </a>
-                <a
-                  href={`${item.link}/change`}
-                  className="text-yellow-600 hover:underline text-sm"
-                >
-                  ✏ Change
                 </a>
               </div>
             </div>

@@ -1,25 +1,34 @@
 import connection from "@/lib/mongodb";
-import Website from "@/models/website";
+import UserModal from "@/models/userModal";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
   try {
     await connection();
 
-    const { website_name, url, current_balance, created_by } =
-      await request.json();
+    const { username, website_name, email, created_by } = await request.json();
 
-    const newWebsite = new Website({
+    // only for double security ask client first
+
+    // if (!(await UserModal.findOne({ website_name }))) {
+    //   return NextResponse.json(
+    //     { Message: "Website name does not exists" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    const newWebsite = new UserModal({
+      username,
       website_name,
-      url,
-      current_balance: parseFloat(current_balance),
+      email,
       created_by,
+      active: true,
     });
 
     await newWebsite.save();
 
     return NextResponse.json({
-      Message: "Bank account created successfully",
+      Message: "User created successfully",
     });
   } catch (error) {
     console.log(error);
@@ -38,23 +47,22 @@ export async function GET(request) {
     await connection();
 
     if (onlyNames === "true") {
-      const allNames = await Website.distinct("website_name");
+      const allNames = await UserModal.distinct("username");
       return NextResponse.json({ data: allNames });
     }
 
     const query = {
       $or: [
-        { website_name: { $regex: search, $options: "i" } },
-        { url: { $regex: search, $options: "i" } },
-        { account_number: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ],
     };
 
     // Get the total count of documents matching the query
-    const totalData = await Website.countDocuments(query);
+    const totalData = await UserModal.countDocuments(query);
 
     // Get paginated bank data
-    const banks = await Website.find(query, { __v: 0, _id: 0 })
+    const banks = await UserModal.find(query, { __v: 0, _id: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
