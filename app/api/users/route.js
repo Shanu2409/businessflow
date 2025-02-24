@@ -6,7 +6,8 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { username, website_name, email, created_by } = await request.json();
+    const { username, website_name, email, created_by, active } =
+      await request.json();
 
     // only for double security ask client first
 
@@ -22,7 +23,7 @@ export async function POST(request) {
       website_name,
       email,
       created_by,
-      active: true,
+      active,
     });
 
     await newWebsite.save();

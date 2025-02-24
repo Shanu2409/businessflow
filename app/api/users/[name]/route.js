@@ -24,13 +24,12 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { name } = context.params;
-    const { email } = await request.json();
+    const { email, active } = await request.json();
 
     // Ensure username exists before updating
     const updatedUser = await UserModal.findOneAndUpdate(
       { username: name },
-      { $set: { email } },
-      s
+      { $set: { email, active } }
     );
 
     if (!updatedUser) {

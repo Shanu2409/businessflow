@@ -2,13 +2,20 @@
 
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { FaUniversity, FaRegCreditCard, FaGlobe } from "react-icons/fa";
+import {
+  FaUniversity,
+  FaRegCreditCard,
+  FaGlobe,
+  FaToggleOn,
+  FaToggleOff,
+} from "react-icons/fa";
 import { toast } from "react-toastify";
 
 const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
+  const [isActive, setIsActive] = useState(true); // Default to active
 
   let websites = [];
   if (typeof window !== "undefined") {
@@ -17,10 +24,10 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
 
   const handleEdit = async (data) => {
     try {
-      const response = await axios.put(`/api/users/${data.bank_name}`, data);
+      const response = await axios.put(`/api/users/${data.username}`, data);
       toast.success(response?.data?.message);
     } catch (error) {
-      console.error("Error editing bank:", error);
+      console.error("Error editing user:", error);
     }
   };
 
@@ -32,6 +39,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
         username: username,
         email: email,
         website_name: selectedWebsite,
+        active: isActive,
       });
       setShowAddUserForm(false);
       fetchData();
@@ -47,10 +55,9 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       username: username,
       email: email,
       website_name: selectedWebsite,
+      active: isActive,
       created_by: user.username,
     });
-
-    console.log(response.data); // Debugging
 
     if (response.status !== 200) {
       console.error(response.data.message);
@@ -58,7 +65,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       return;
     }
 
-    console.log(response.data.message);
     toast.success(response.data.message);
 
     fetchData();
@@ -66,6 +72,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     setUsername("");
     setEmail("");
     setSelectedWebsite("");
+    setIsActive(true);
 
     setShowAddUserForm(false);
   };
@@ -75,6 +82,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       setUsername(editData.username);
       setEmail(editData.email);
       setSelectedWebsite(editData.website_name || "");
+      setIsActive(editData.active ?? true); // Default to true if undefined
     }
   }, [editData]);
 
@@ -129,6 +137,32 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Active/Disabled Toggle */}
+        <div className="mb-6 flex items-center justify-between">
+          {/* Toggle Label */}
+          <label
+            className="flex items-center cursor-pointer"
+            onClick={() => setIsActive(!isActive)}
+          >
+            {isActive ? (
+              <FaToggleOn className="text-green-500 text-2xl mr-2" />
+            ) : (
+              <FaToggleOff className="text-gray-500 text-2xl mr-2" />
+            )}
+            <span className="text-gray-700">
+              {isActive ? "Active" : "Disabled"}
+            </span>
+          </label>
+
+          {/* Hidden Checkbox (Fixed onChange event) */}
+          <input
+            type="checkbox"
+            className="hidden"
+            checked={isActive}
+            onChange={() => setIsActive(!isActive)}
+          />
         </div>
 
         <div className="flex items-center justify-center">

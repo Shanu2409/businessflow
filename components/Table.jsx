@@ -37,7 +37,19 @@ export const Table = ({
   const formatEntry = (entry, key) => {
     if (typeof entry === "boolean") {
       return entry ? "✅" : "❌";
-    } else if (
+    }
+    // Check if entry is a Firestore timestamp
+    else if (entry && typeof entry === "object" && entry.seconds) {
+      return new Intl.DateTimeFormat("en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(entry.seconds * 1000)); // Convert seconds to milliseconds
+    }
+    // Handle standard date strings
+    else if (
       key === "createdAt" &&
       typeof entry === "string" &&
       !isNaN(Date.parse(entry))
@@ -49,7 +61,9 @@ export const Table = ({
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date(entry));
-    } else if (key === "current_balance" && typeof entry === "number") {
+    }
+    // Format currency
+    else if (key === "current_balance" && typeof entry === "number") {
       return `₹ ${entry.toLocaleString("en-IN")}`;
     }
     return entry;
