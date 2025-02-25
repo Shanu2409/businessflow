@@ -1,4 +1,6 @@
 import connection from "@/lib/mongodb";
+import Bank from "@/models/bank";
+import Transaction from "@/models/transaction";
 import UserModal from "@/models/userModal";
 import { NextResponse, NextRequest } from "next/server";
 
@@ -6,31 +8,32 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { username, website_name, email, created_by, active, current_balance } =
-      await request.json();
+    const {
+        username,
+        website_name,
+        bank_name,
+        transaction_type,
+        created_by,
+        amount,
+    } = await request.json();
 
-    // only for double security ask client first
+    const bank = await Bank.findOne({bank_name}, {current_balance: 1})
 
-    // if (!(await UserModal.findOne({ website_name }))) {
-    //   return NextResponse.json(
-    //     { Message: "Website name does not exists" },
-    //     { status: 400 }
-    //   );
-    // }
+    const user = await UserModal.findOne({username }, {current_balance: 1})
 
-    const newWebsite = new UserModal({
-      username,
-      website_name,
-      email,
-      current_balance,
-      created_by,
-      active,
-    });
+    // const newBank = new Transaction({
+    //   bank_name,
+    //   username,
+    //   website_name,
+    //   transaction_type,
+    //   amount,
+    //   created_by,
+    // });
 
-    await newWebsite.save();
+    // await newBank.save();
 
     return NextResponse.json({
-      Message: "User created successfully",
+      Message: "Bank account created successfully",
     });
   } catch (error) {
     console.log(error);
@@ -44,27 +47,22 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
-    const onlyNames = searchParams.get("onlyNames");
 
     await connection();
 
-    if (onlyNames === "true") {
-      const allNames = await UserModal.distinct("username");
-      return NextResponse.json({ data: allNames });
-    }
-
     const query = {
       $or: [
-        { username: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { bank_name: { $regex: search, $options: "i" } },
+        { ifsc_code: { $regex: search, $options: "i" } },
+        { account_number: { $regex: search, $options: "i" } },
       ],
     };
 
     // Get the total count of documents matching the query
-    const totalData = await UserModal.countDocuments(query);
+    const totalData = await Bank.countDocuments(query);
 
     // Get paginated bank data
-    const banks = await UserModal.find(query, { __v: 0, _id: 0 })
+    const banks = await Bank.find(query, { __v: 0, _id: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);

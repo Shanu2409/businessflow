@@ -37,6 +37,20 @@ const HomeMenu = () => {
     }
   };
 
+  const fetchUserList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/users?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("users", JSON.stringify(responseData?.data));
+      }
+
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+  };
+
   // State to track collapsed items
   const [collapsed, setCollapsed] = useState(
     menuItems.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
@@ -47,8 +61,14 @@ const HomeMenu = () => {
     setCollapsed((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
+  let hasFetched = false; // Declare this outside the component
+
   useEffect(() => {
-    fetchWebsiteList();
+    if (!hasFetched) {
+      hasFetched = true; // Set to true after the first fetch
+      fetchWebsiteList();
+      fetchUserList();
+    }
   }, []);
 
   return (
