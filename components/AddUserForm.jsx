@@ -1,7 +1,6 @@
 "use client";
 
 import axios from "axios";
-import React from "react";
 import React, { useEffect, useState } from "react";
 import {
   FaUniversity,
