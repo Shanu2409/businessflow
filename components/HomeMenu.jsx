@@ -5,6 +5,8 @@ import React, { useEffect, useRef, useState } from "react";
 
 const HomeMenu = () => {
   let user;
+  let userList;
+  let websiteList;
 
   // Menu data
   const menuItems = [
@@ -16,6 +18,8 @@ const HomeMenu = () => {
 
   if (typeof window !== "undefined") {
     user = JSON.parse(sessionStorage.getItem("user"));
+    userList = JSON.parse(sessionStorage.getItem("users"));
+    websiteList = JSON.parse(sessionStorage.getItem("websites"));
   }
 
   if (user?.type == "admin") {
@@ -51,6 +55,8 @@ const HomeMenu = () => {
     }
   };
 
+
+
   // State to track collapsed items
   const [collapsed, setCollapsed] = useState(
     menuItems.reduce((acc, _, index) => ({ ...acc, [index]: false }), {})
@@ -64,8 +70,7 @@ const HomeMenu = () => {
   const hasFetched = useRef(false); // Persist across renders
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
+    if (!userList && !websiteList) {
       fetchWebsiteList();
       fetchUserList();
     }

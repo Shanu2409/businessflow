@@ -44,6 +44,21 @@ const PageContent = () => {
     }
   };
 
+  const fetchWebsiteList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/websites?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
+      }
+
+      console.log(responseData);
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+  };
+
   const handleIsEdit = (data) => {
     setEditData(data);
     setShowAddUserForm(true);
@@ -66,6 +81,7 @@ const PageContent = () => {
             className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
             onClick={() => {
               setShowAddUserForm(!showAddUserForm);
+              fetchWebsiteList();
               setEditData(null);
             }}
           >
@@ -77,6 +93,7 @@ const PageContent = () => {
         {showAddUserForm && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <AddUserForm
+            fetchWebsiteList={fetchWebsiteList}
               editData={editData}
               setShowAddUserForm={setShowAddUserForm}
               fetchData={fetchUserData}
