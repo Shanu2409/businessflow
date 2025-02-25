@@ -1,7 +1,7 @@
 import connection from "@/lib/mongodb";
 import Bank from "@/models/bank";
 import Transaction from "@/models/transaction";
-import UserModal from "@/models/userModal";
+import Website from "@/models/website";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
@@ -9,35 +9,90 @@ export async function POST(request) {
     await connection();
 
     const {
-        username,
-        website_name,
-        bank_name,
-        transaction_type,
-        created_by,
-        amount,
+      username,
+      website_name,
+      bank_name,
+      transaction_type,
+      created_by,
+      amount,
     } = await request.json();
 
-    const bank = await Bank.findOne({bank_name}, {current_balance: 1})
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
 
-    const user = await UserModal.findOne({username }, {current_balance: 1})
+    // Fetch bank and website balances
+    const bank = await Bank.findOne({ bank_name }, { current_balance: 1 });
+    const website = await Website.findOne(
+      { website_name },
+      { current_balance: 1 }
+    );
 
-    // const newBank = new Transaction({
-    //   bank_name,
-    //   username,
-    //   website_name,
-    //   transaction_type,
-    //   amount,
-    //   created_by,
-    // });
+    // Ensure fetched balances are numbers
+    const bankBalance = bank ? Number(bank.current_balance) : 0;
+    const websiteBalance = website ? Number(website.current_balance) : 0;
 
-    // await newBank.save();
+    // Perform transaction updates
+    if (transaction_type === "Deposit") {
+      await Bank.updateOne(
+        { bank_name },
+        { $inc: { current_balance: numericAmount } },
+        { upsert: false }
+      );
+      await Website.updateOne(
+        { website_name },
+        { $inc: { current_balance: -numericAmount } },
+        { upsert: false }
+      );
+    } else if (transaction_type === "Withdraw") {
+      await Bank.updateOne(
+        { bank_name },
+        { $inc: { current_balance: -numericAmount } },
+        { upsert: false }
+      );
+      await Website.updateOne(
+        { website_name },
+        { $inc: { current_balance: numericAmount } },
+        { upsert: false }
+      );
+    }
+
+    // Calculate the new balances dynamically
+    const newBankBalance =
+      transaction_type === "Deposit"
+        ? bankBalance + numericAmount
+        : bankBalance - numericAmount;
+
+    const newWebsiteBalance =
+      transaction_type === "Deposit"
+        ? websiteBalance - numericAmount
+        : websiteBalance + numericAmount;
+
+    console.log("working till here");
+    console.log("New Bank Balance:", newBankBalance);
+    console.log("New Website Balance:", newWebsiteBalance);
+
+    // Save transaction with calculated balances
+    const newTransaction = new Transaction({
+      bank_name,
+      username,
+      website_name,
+      transaction_type,
+      old_bank_balance: bankBalance,
+      new_bank_balance: newBankBalance, // Use calculated value
+      old_website_balance: websiteBalance,
+      new_website_balance: newWebsiteBalance, // Use calculated value
+      amount: numericAmount,
+      created_by,
+    });
+
+    await newTransaction.save();
 
     return NextResponse.json({
-      Message: "Bank account created successfully",
+      message: "Transaction created successfully",
     });
   } catch (error) {
-    console.log(error);
-    return NextResponse.json({ Message: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
@@ -53,16 +108,16 @@ export async function GET(request) {
     const query = {
       $or: [
         { bank_name: { $regex: search, $options: "i" } },
-        { ifsc_code: { $regex: search, $options: "i" } },
-        { account_number: { $regex: search, $options: "i" } },
+        { website_name: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
       ],
     };
 
     // Get the total count of documents matching the query
-    const totalData = await Bank.countDocuments(query);
+    const totalData = await Transaction.countDocuments(query);
 
     // Get paginated bank data
-    const banks = await Bank.find(query, { __v: 0, _id: 0 })
+    const banks = await Transaction.find(query, { __v: 0, _id: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);

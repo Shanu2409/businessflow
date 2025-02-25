@@ -21,9 +21,11 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
 
   const fetchUserData = async () => {
+    const searchQuery = searchParams.get("search") || "";
+
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search}&page=${page}&limit=20`
+        `/api/users?search=${search || searchQuery}&page=${page}&limit=20`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
@@ -93,7 +95,7 @@ const PageContent = () => {
         {showAddUserForm && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <AddUserForm
-            fetchWebsiteList={fetchWebsiteList}
+              fetchWebsiteList={fetchWebsiteList}
               editData={editData}
               setShowAddUserForm={setShowAddUserForm}
               fetchData={fetchUserData}

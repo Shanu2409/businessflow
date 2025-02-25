@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema({
-  user_name: { type: String, required: true, unique: false },
-  website_name: { type: String, required: true, unique: false },
-  bank_name: { type: String, required: true, unique: false },
-  transaction_type: { type: String, required: true },
-  amount: { type: Number, require: true },
-  new_bank_balance: { type: Number, require: true },
-  old_bank_balance: { type: Number, require: true },
-  new_website_balance: { type: Number, require: true },
-  old_website_balance: { type: Number, require: true },
-  fcheck: { type: Boolean, default: false },
+  user_name: { type: String },
+  website_name: { type: String },
+  bank_name: { type: String },
+  transaction_type: { type: String },
+  amount: { type: Number },
+  old_bank_balance: { type: Number },
+  new_bank_balance: { type: Number },
+  old_website_balance: { type: Number },
+  new_website_balance: { type: Number },
+  check: { type: Boolean, default: false },
   re_check: { type: Boolean, default: false },
   created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
@@ -18,5 +18,6 @@ const transactionSchema = new mongoose.Schema({
 });
 
 const Transaction =
-  mongoose.models.website || mongoose.model("website", transactionSchema);
+  mongoose.models.transactions ||
+  mongoose.model("transactions", transactionSchema);
 export default Transaction;

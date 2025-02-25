@@ -1,3 +1,4 @@
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FaChevronDown,
@@ -13,47 +14,54 @@ export const Table = ({
   setSearch,
   fetchData,
   totalData,
-  showChecknRecheck = false,
+  showCheckRecheck = false,
   changeCheckStatus,
   changeRecheckStatus,
   page,
   setPage,
   handleDelete,
   handleIsEdit,
+  showDelete = true,
+  showEdit = true,
 }) => {
-  const [sortedRows, setSortedRows] = useState([...rows]);
   const itemsPerPage = 20;
-
-  // New state variable for collapsing the Filter & Sorting section
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Update sortedRows when rows prop changes
-  useEffect(() => {
-    setSortedRows([...rows]);
-  }, [rows]);
+  const searchParams = useSearchParams(); // Get search params
+  const [searchValue, setSearchValue] = useState(""); // Local state for filter input
 
-  // Formatter: only "createdAt" fields are treated as dates,
-  // "current_balance" is formatted as currency, and other values remain unmodified.
+  // Set search value from URL when component mounts
+  useEffect(() => {
+    const searchQuery = searchParams.get("search") || ""; // Get 'search' param
+    setSearch(searchQuery.toLowerCase()); // Set in external state
+    setSearchValue(searchQuery); // Set in local input field
+  }, [searchParams, setSearch]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Compute columns dynamically
+  const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+  const displayColumns = showCheckRecheck
+    ? columns.filter((col) => col !== "check" && col !== "recheck")
+    : columns;
+
+  // Compute total pages
+  const computedTotalPages = Math.ceil(totalData / itemsPerPage);
+  const currentRows = rows.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  // Format Data for Display
   const formatEntry = (entry, key) => {
-    if (typeof entry === "boolean") {
-      return entry ? "✅" : "❌";
-    }
-    // Check if entry is a Firestore timestamp
-    else if (entry && typeof entry === "object" && entry.seconds) {
-      return new Intl.DateTimeFormat("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(entry.seconds * 1000)); // Convert seconds to milliseconds
-    }
-    // Handle standard date strings
-    else if (
-      key === "createdAt" &&
-      typeof entry === "string" &&
-      !isNaN(Date.parse(entry))
-    ) {
+    if (typeof entry === "boolean") return entry ? "✅" : "❌";
+    if (key === "createdAt" && !isNaN(Date.parse(entry))) {
       return new Intl.DateTimeFormat("en-IN", {
         year: "numeric",
         month: "long",
@@ -62,50 +70,27 @@ export const Table = ({
         minute: "2-digit",
       }).format(new Date(entry));
     }
-    // Format currency
-    else if (key === "current_balance" && typeof entry === "number") {
+    if (key === "current_balance" && typeof entry === "number") {
       return `₹ ${entry.toLocaleString("en-IN")}`;
     }
     return entry;
   };
 
-  const filter = (event) => {
-    const value = event.target.value.toLowerCase();
-    setSearch(value);
-  };
-
-  // Compute columns from sortedRows if data exists.
-  const columns = sortedRows?.length > 0 ? Object.keys(sortedRows[0]) : [];
-  // If checkboxes are shown, remove "check" and "recheck" keys from display.
-  const displayColumns = showChecknRecheck
-    ? columns.filter((col) => col !== "check" && col !== "recheck")
-    : columns;
-
-  // Compute total pages using totalData.
-  const computedTotalPages = Math.ceil(totalData / itemsPerPage);
-
-  // Determine which rows to display (client-side vs server-side pagination).
-  const currentRows =
-    totalData === sortedRows.length
-      ? sortedRows.slice((page - 1) * itemsPerPage, page * itemsPerPage)
-      : sortedRows;
-
   return (
     <div className="flex flex-col-reverse md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-      {/* Table Section */}
-      <div className="w-full md:w-3/4">
-        {/* Horizontal scroll for small screens */}
-        <div className="overflow-x-auto">
-          {sortedRows?.length > 0 ? (
-            <table className="w-full border-collapse">
+      {/* Table Section with Horizontal Scroll */}
+      <div className="w-full md:w-3/4 overflow-x-auto">
+        <div className="min-w-full">
+          {rows.length > 0 ? (
+            <table className="w-full border-collapse whitespace-nowrap">
               <thead className="text-left text-white bg-primary">
                 <tr>
-                  {showChecknRecheck && (
+                  {showCheckRecheck && (
                     <>
-                      <th className="px-2 py-1 border border-gray-600 whitespace-nowrap">
+                      <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                         Check
                       </th>
-                      <th className="px-2 py-1 border border-gray-600 whitespace-nowrap">
+                      <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                         Recheck
                       </th>
                     </>
@@ -113,76 +98,90 @@ export const Table = ({
                   {displayColumns.map((col, index) => (
                     <th
                       key={index}
-                      className="px-2 py-1 border border-gray-600 first:border-l-0 last:border-r-0 whitespace-nowrap"
+                      className="px-4 py-2 border border-gray-600 text-sm text-center"
                     >
-                      {col.replace("_", " ").toUpperCase()}
+                      {col.replaceAll("_", " ").toUpperCase()}
                     </th>
                   ))}
-                  {/* Actions column */}
-                  <th className="px-2 py-1 border border-gray-600 whitespace-nowrap">
-                    ACTIONS
-                  </th>
+                  {(showDelete || showEdit) && (
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      ACTIONS
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {currentRows.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className="hover:bg-secondary hover:text-white"
-                  >
-                    {showChecknRecheck && (
-                      <>
-                        <td className="px-2 py-1 border border-gray-600">
-                          <input
-                            type="checkbox"
-                            checked={row.check}
-                            onChange={(e) =>
-                              changeCheckStatus(row, e.target.checked)
-                            }
-                          />
+                {currentRows.map((row, rowIndex) => {
+                  // Determine text color based on transaction_type
+                  const textColor =
+                    row.transaction_type === "Deposit"
+                      ? "text-green-600 font-bold"
+                      : row.transaction_type === "Withdraw"
+                      ? "text-red-600 font-bold"
+                      : "text-black";
+
+                  return (
+                    <tr key={rowIndex} className={`${textColor}`}>
+                      {showCheckRecheck && (
+                        <>
+                          <td className="px-4 py-2 border border-gray-600">
+                            <input
+                              type="checkbox"
+                              checked={row.check}
+                              onChange={(e) =>
+                                changeCheckStatus(row, e.target.checked)
+                              }
+                            />
+                          </td>
+                          <td className="px-4 py-2 border border-gray-600">
+                            <input
+                              type="checkbox"
+                              checked={row.re_check}
+                              disabled={!row.check}
+                              onChange={(e) =>
+                                changeRecheckStatus(row, e.target.checked)
+                              }
+                            />
+                          </td>
+                        </>
+                      )}
+                      {displayColumns.map((col, index) => (
+                        <td
+                          key={index}
+                          className="px-4 py-2 border border-gray-600"
+                        >
+                          {formatEntry(row[col], col)}
                         </td>
-                        <td className="px-2 py-1 border border-gray-600">
-                          <input
-                            type="checkbox"
-                            checked={row.recheck}
-                            onChange={(e) =>
-                              changeRecheckStatus(row, e.target.checked)
-                            }
-                          />
+                      ))}
+                      {(showDelete || showEdit) && (
+                        <td className="px-4 py-2 border border-gray-600">
+                          {showEdit && (
+                            <button
+                              onClick={() => handleIsEdit(row)}
+                              className="text-blue-500 mr-2"
+                            >
+                              <FaEdit />
+                            </button>
+                          )}
+                          {showDelete && (
+                            <button
+                              onClick={() =>
+                                handleDelete(
+                                  Object.entries(row).find(([key, value]) =>
+                                    key.includes("name")
+                                  )[1]
+                                )
+                              }
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </td>
-                      </>
-                    )}
-                    {displayColumns.map((col, index) => (
-                      <td
-                        key={index}
-                        className="px-2 py-1 border border-gray-600 first:border-l-0 last:border-r-0 whitespace-nowrap"
-                      >
-                        {formatEntry(row[col], col)}
-                      </td>
-                    ))}
-                    {/* Actions cell */}
-                    <td className="px-2 py-1 border border-gray-600 whitespace-nowrap">
-                      <button
-                        onClick={() => handleIsEdit(row)}
-                        className="text-blue-500 hover:text-blue-700 mr-2"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDelete(
-                            Object.entries(row).find(([key, value]) =>
-                              key.includes("name")
-                            )[1]
-                          )
-                        }
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (
@@ -191,7 +190,9 @@ export const Table = ({
             </h1>
           )}
         </div>
-        {sortedRows?.length > 0 && (
+
+        {/* Pagination Controls */}
+        {rows.length > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4">
             <div className="text-gray-700 mb-2 sm:mb-0">
               Total Data: {totalData} | Data per Page: {itemsPerPage}
@@ -200,7 +201,7 @@ export const Table = ({
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
-                className="p-2 bg-gray-200 rounded disabled:opacity-50 transition duration-200 hover:bg-gray-300"
+                className="p-2 bg-gray-200 rounded disabled:opacity-50"
               >
                 <FaChevronLeft />
               </button>
@@ -212,7 +213,7 @@ export const Table = ({
                   setPage((prev) => Math.min(prev + 1, computedTotalPages))
                 }
                 disabled={page === computedTotalPages}
-                className="p-2 bg-gray-200 rounded disabled:opacity-50 transition duration-200 hover:bg-gray-300"
+                className="p-2 bg-gray-200 rounded disabled:opacity-50"
               >
                 <FaChevronRight />
               </button>
@@ -220,6 +221,7 @@ export const Table = ({
           </div>
         )}
       </div>
+
       {/* Filter & Sorting Sidebar */}
       <div className="w-full md:w-1/4 mt-4 md:mt-0">
         <div className="p-4 bg-white rounded-lg shadow-md">
@@ -235,16 +237,17 @@ export const Table = ({
             <span className="text-lg font-semibold">Filter & Sort</span>
           </button>
           {isFilterOpen && (
-            <div>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Filter items"
-                  onChange={filter}
-                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
+            <input
+              type="text"
+              placeholder="Filter items"
+              value={searchValue} // Controlled input field
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchValue(value); // Update input field
+                setSearch(value.toLowerCase()); // Update external search state
+              }}
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+            />
           )}
         </div>
       </div>

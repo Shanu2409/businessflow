@@ -8,7 +8,6 @@ import {
   FaGlobe,
   FaToggleOn,
   FaToggleOff,
-  FaMoneyBillWave,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -16,13 +15,27 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
-  const [currentBalance, setCurrentBalance] = useState("");
   const [isActive, setIsActive] = useState(true); // Default to active
 
   let websites = [];
   if (typeof window !== "undefined") {
     websites = JSON.parse(sessionStorage.getItem("websites")) || [];
   }
+
+  const fetchWebsiteList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/websites?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
+      }
+
+      console.log(responseData);
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+  };
 
   const fetchUserList = async () => {
     try {
@@ -32,9 +45,8 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));
       }
-
     } catch (error) {
-      console.error("Error fetching bank data:", error);
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -42,7 +54,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     try {
       const response = await axios.put(`/api/users/${data.username}`, data);
       toast.success(response?.data?.message);
-
       fetchUserList();
     } catch (error) {
       console.error("Error editing user:", error);
@@ -58,7 +69,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
         email: email,
         website_name: selectedWebsite,
         active: isActive,
-        current_balance: currentBalance
       });
       setShowAddUserForm(false);
       fetchData();
@@ -75,7 +85,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       email: email,
       website_name: selectedWebsite,
       active: isActive,
-      current_balance: currentBalance,
       created_by: user.username,
     });
 
@@ -92,10 +101,8 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
 
     setUsername("");
     setEmail("");
-    setCurrentBalance("");
     setSelectedWebsite("");
     setIsActive(true);
-    setCurrentBalance("");
     setShowAddUserForm(false);
   };
 
@@ -108,9 +115,18 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     }
   }, [editData]);
 
+  useEffect(() => {
+    fetchWebsiteList();
+    if (typeof window !== "undefined") {
+      websites = JSON.parse(sessionStorage.getItem("websites")) || [];
+    }
+  }, []);
+
   return (
     <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">Add User</h2>
+      <h2 className="text-2xl font-bold text-center mb-6">
+        {editData ? "Edit User" : "Add User"}
+      </h2>
       <form
         onSubmit={handleSubmit}
         className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
@@ -159,21 +175,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="mb-6 flex items-center border-b border-gray-300 py-2">
-          <FaMoneyBillWave className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
-            type="number"
-            step="0.01"
-            placeholder="Current Balance"
-            aria-label="Current Balance"
-            disabled={editData}
-            style={{ cursor: editData ? "not-allowed" : "default" }}
-            value={currentBalance}
-            onChange={(e) => setCurrentBalance(e.target.value)}
-          />
         </div>
 
         {/* Active/Disabled Toggle */}

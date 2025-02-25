@@ -20,9 +20,11 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
 
   const fetchBankData = async () => {
+    const searchQuery = searchParams.get("search") || "";
+
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=20`
+        `/api/banks?search=${search || searchQuery}&page=${page}&limit=20`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);

@@ -39,8 +39,14 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
+    const onlyNames = searchParams.get("onlyNames");
 
     await connection();
+
+    if (onlyNames === "true") {
+      const allNames = await Bank.distinct("bank_name");
+      return NextResponse.json({ data: allNames });
+    }
 
     const query = {
       $or: [
