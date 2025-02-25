@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const HomeMenu = () => {
   let user;
@@ -61,11 +61,11 @@ const HomeMenu = () => {
     setCollapsed((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  let hasFetched = false; // Declare this outside the component
+  const hasFetched = useRef(false); // Persist across renders
 
   useEffect(() => {
-    if (!hasFetched) {
-      hasFetched = true; // Set to true after the first fetch
+    if (!hasFetched.current) {
+      hasFetched.current = true;
       fetchWebsiteList();
       fetchUserList();
     }
