@@ -1,4 +1,4 @@
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FaChevronDown,
@@ -29,6 +29,8 @@ export const Table = ({
 
   const searchParams = useSearchParams(); // Get search params
   const [searchValue, setSearchValue] = useState(""); // Local state for filter input
+
+  const router = useRouter();
 
   // Set search value from URL when component mounts
   useEffect(() => {
@@ -145,14 +147,34 @@ export const Table = ({
                           </td>
                         </>
                       )}
-                      {displayColumns.map((col, index) => (
-                        <td
-                          key={index}
-                          className="px-4 py-2 border border-gray-600"
-                        >
-                          {formatEntry(row[col], col)}
-                        </td>
-                      ))}
+                      {displayColumns.map((col, index) => {
+                        const cellValue = row[col];
+
+                        // Check if the column name contains restricted words
+                        const isRestrictedColumn =
+                          col.toLowerCase().includes("balance") ||
+                          col.toLowerCase().includes("_id") ||
+                          col.toLowerCase().includes("createdat");
+
+                        return (
+                          <td
+                            key={index}
+                            onClick={() => {
+                              if (!isRestrictedColumn) {
+                                router.push(`/transaction?search=${cellValue}`);
+                              }
+                            }}
+                            className={`px-4 py-2 border border-gray-600 ${
+                              !isRestrictedColumn
+                                ? "hover:underline cursor-pointer"
+                                : ""
+                            }`}
+                          >
+                            {formatEntry(cellValue, col)}
+                          </td>
+                        );
+                      })}
+
                       {(showDelete || showEdit) && (
                         <td className="px-4 py-2 border border-gray-600">
                           {showEdit && (

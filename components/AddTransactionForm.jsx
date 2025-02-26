@@ -10,6 +10,7 @@ import {
   FaMoneyBillWave,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import FullScreenLoader from "./FullScreenLoader";
 
 const AddTransactionForm = ({
   setShowTransactionForm,
@@ -21,6 +22,7 @@ const AddTransactionForm = ({
   const [selectedBank, setSelectedBank] = useState("");
   const [transactionType, setTransactionType] = useState("Deposit");
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [websites, setWebsites] = useState([]);
   const [userList, setUserList] = useState([]);
@@ -28,6 +30,7 @@ const AddTransactionForm = ({
 
   // Fetch required data (websites, banks, users)
   const fetchLists = async () => {
+    setLoading(true);
     try {
       const [websiteRes, bankRes, userRes] = await Promise.all([
         axios.get(`/api/websites?onlyNames=true`),
@@ -50,6 +53,8 @@ const AddTransactionForm = ({
     } catch (error) {
       console.error("Error fetching lists:", error);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -122,70 +127,74 @@ const AddTransactionForm = ({
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">
-        {editData ? "Edit Transaction" : "Add Transaction"}
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        {/* Username Dropdown */}
-        <Dropdown
-          icon={<FaUniversity className="text-gray-600 mr-3" />}
-          label="Select a User"
-          options={userList}
-          value={selectedUser}
-          onChange={setSelectedUser}
-        />
+    <>
+      <div className="max-w-md mx-auto p-4">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          {editData ? "Edit Transaction" : "Add Transaction"}
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+        >
+          {/* Username Dropdown */}
+          <Dropdown
+            icon={<FaUniversity className="text-gray-600 mr-3" />}
+            label="Select a User"
+            options={userList}
+            value={selectedUser}
+            onChange={setSelectedUser}
+          />
 
-        {/* Website Dropdown */}
-        <Dropdown
-          icon={<FaGlobe className="text-gray-600 mr-3" />}
-          label="Select a Website"
-          options={websites}
-          value={selectedWebsite}
-          onChange={setSelectedWebsite}
-        />
+          {/* Website Dropdown */}
+          <Dropdown
+            icon={<FaGlobe className="text-gray-600 mr-3" />}
+            label="Select a Website"
+            options={websites}
+            value={selectedWebsite}
+            onChange={setSelectedWebsite}
+          />
 
-        {/* Bank Dropdown */}
-        <Dropdown
-          icon={<FaBuilding className="text-gray-600 mr-3" />}
-          label="Select a Bank"
-          options={bankList}
-          value={selectedBank}
-          onChange={setSelectedBank}
-        />
+          {/* Bank Dropdown */}
+          <Dropdown
+            icon={<FaBuilding className="text-gray-600 mr-3" />}
+            label="Select a Bank"
+            options={bankList}
+            value={selectedBank}
+            onChange={setSelectedBank}
+          />
 
-        {/* Transaction Type Dropdown */}
-        <Dropdown
-          icon={<FaExchangeAlt className="text-gray-600 mr-3" />}
-          label="Select Transaction Type"
-          options={["Deposit", "Withdraw"]}
-          value={transactionType}
-          onChange={setTransactionType}
-        />
+          {/* Transaction Type Dropdown */}
+          <Dropdown
+            icon={<FaExchangeAlt className="text-gray-600 mr-3" />}
+            label="Select Transaction Type"
+            options={["Deposit", "Withdraw"]}
+            value={transactionType}
+            onChange={setTransactionType}
+          />
 
-        {/* Amount Input */}
-        <InputField
-          icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
-          type="number"
-          placeholder="Enter Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+          {/* Amount Input */}
+          <InputField
+            icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
+            type="number"
+            placeholder="Enter Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
 
-        {/* Submit Button */}
-        <div className="flex items-center justify-center">
-          <button
-            className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            {editData ? "Update" : "Add"}
-          </button>
-        </div>
-      </form>
-    </div>
+          {/* Submit Button */}
+          <div className="flex items-center justify-center">
+            <button
+              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              {editData ? "Update" : "Add"}
+            </button>
+          </div>
+        </form>
+
+        <FullScreenLoader isLoading={loading} />
+      </div>
+    </>
   );
 };
 

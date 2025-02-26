@@ -10,12 +10,14 @@ import {
   FaToggleOff,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import FullScreenLoader from "./FullScreenLoader";
 
 const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
   const [isActive, setIsActive] = useState(true); // Default to active
+  cosnt[(loading, setLoading)] = useState(false);
 
   let websites = [];
   if (typeof window !== "undefined") {
@@ -23,6 +25,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   }
 
   const fetchWebsiteList = async () => {
+    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/websites?onlyNames=true`
@@ -35,9 +38,12 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching bank data:", error);
     }
+
+    setLoading(false);
   };
 
   const fetchUserList = async () => {
+    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/users?onlyNames=true`
@@ -48,9 +54,12 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
+
+    setLoading(false);
   };
 
   const handleEdit = async (data) => {
+    setLoading(true);
     try {
       const response = await axios.put(`/api/users/${data.username}`, data);
       toast.success(response?.data?.message);
@@ -58,6 +67,8 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error editing user:", error);
     }
+
+    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -123,96 +134,99 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   }, []);
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">
-        {editData ? "Edit User" : "Add User"}
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-          <FaUniversity className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
-            type="text"
-            placeholder="Username"
-            disabled={editData}
-            style={{ cursor: editData ? "not-allowed" : "default" }}
-            aria-label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
+    <>
+      <div className="max-w-md mx-auto p-4">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          {editData ? "Edit User" : "Add User"}
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+        >
+          <div className="mb-4 flex items-center border-b border-gray-300 py-2">
+            <FaUniversity className="text-gray-600 mr-3" />
+            <input
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+              type="text"
+              placeholder="Username"
+              disabled={editData}
+              style={{ cursor: editData ? "not-allowed" : "default" }}
+              aria-label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
 
-        <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-          <FaRegCreditCard className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
-            placeholder="Email"
-            aria-label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+          <div className="mb-4 flex items-center border-b border-gray-300 py-2">
+            <FaRegCreditCard className="text-gray-600 mr-3" />
+            <input
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
+              placeholder="Email"
+              aria-label="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-        {/* Website Dropdown with Icon */}
-        <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-          <FaGlobe className="text-gray-600 mr-3" />
-          <select
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-2 px-2 leading-tight focus:outline-none"
-            value={selectedWebsite}
-            disabled={editData}
-            style={{ cursor: editData ? "not-allowed" : "default" }}
-            onChange={(e) => setSelectedWebsite(e.target.value)}
-          >
-            <option value="" disabled>
-              Select a Website
-            </option>
-            {websites.map((website, index) => (
-              <option key={index} value={website}>
-                {website}
+          {/* Website Dropdown with Icon */}
+          <div className="mb-4 flex items-center border-b border-gray-300 py-2">
+            <FaGlobe className="text-gray-600 mr-3" />
+            <select
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-2 px-2 leading-tight focus:outline-none"
+              value={selectedWebsite}
+              disabled={editData}
+              style={{ cursor: editData ? "not-allowed" : "default" }}
+              onChange={(e) => setSelectedWebsite(e.target.value)}
+            >
+              <option value="" disabled>
+                Select a Website
               </option>
-            ))}
-          </select>
-        </div>
+              {websites.map((website, index) => (
+                <option key={index} value={website}>
+                  {website}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Active/Disabled Toggle */}
-        <div className="mb-6 flex items-center justify-between">
-          {/* Toggle Label */}
-          <label
-            className="flex items-center cursor-pointer"
-            onClick={() => setIsActive(!isActive)}
-          >
-            {isActive ? (
-              <FaToggleOn className="text-green-500 text-2xl mr-2" />
-            ) : (
-              <FaToggleOff className="text-gray-500 text-2xl mr-2" />
-            )}
-            <span className="text-gray-700">
-              {isActive ? "Active" : "Disabled"}
-            </span>
-          </label>
+          {/* Active/Disabled Toggle */}
+          <div className="mb-6 flex items-center justify-between">
+            {/* Toggle Label */}
+            <label
+              className="flex items-center cursor-pointer"
+              onClick={() => setIsActive(!isActive)}
+            >
+              {isActive ? (
+                <FaToggleOn className="text-green-500 text-2xl mr-2" />
+              ) : (
+                <FaToggleOff className="text-gray-500 text-2xl mr-2" />
+              )}
+              <span className="text-gray-700">
+                {isActive ? "Active" : "Disabled"}
+              </span>
+            </label>
 
-          {/* Hidden Checkbox (Fixed onChange event) */}
-          <input
-            type="checkbox"
-            className="hidden"
-            checked={isActive}
-            onChange={() => setIsActive(!isActive)}
-          />
-        </div>
+            {/* Hidden Checkbox (Fixed onChange event) */}
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={isActive}
+              onChange={() => setIsActive(!isActive)}
+            />
+          </div>
 
-        <div className="flex items-center justify-center">
-          <button
-            className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            {editData ? "Update" : "Add"}
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="flex items-center justify-center">
+            <button
+              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              {editData ? "Update" : "Add"}
+            </button>
+          </div>
+        </form>
+      </div>
+      <FullScreenLoader isLoading={isLoading} />
+    </>
   );
 };
 

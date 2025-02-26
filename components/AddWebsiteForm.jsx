@@ -4,13 +4,16 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { FaUniversity, FaCode, FaMoneyBillWave } from "react-icons/fa";
 import { toast } from "react-toastify";
+import FullScreenLoader from "./FullScreenLoader";
 
 const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   const [websiteName, setWebsiteName] = useState("");
   const [url, setUrl] = useState("");
   const [currentBalance, setCurrentBalance] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleEdit = async (data) => {
+    setLoading(true);
     try {
       const response = await axios.put(
         `/api/websites/${data.website_name}`,
@@ -21,9 +24,12 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       console.error("Error editing website:", error);
       toast.error("Error editing website");
     }
+
+    setLoading(false);
   };
 
   const fetchWebsiteList = async () => {
+    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/websites?onlyNames=true`
@@ -36,6 +42,8 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching bank data:", error);
     }
+
+    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -57,6 +65,13 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user"));
     }
+
+    if (!websiteName || !url || !currentBalance) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await axios.post("/api/websites", {
@@ -84,6 +99,8 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       console.error("Error adding website:", error);
       toast.error("Error adding website");
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -95,65 +112,69 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   }, [editData]);
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">
-        {editData ? "Edit Website" : "Add Website"}
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-          <FaUniversity className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
-            type="text"
-            placeholder="Website Name"
-            disabled={editData}
-            style={{ cursor: editData ? "not-allowed" : "default" }}
-            aria-label="Website Name"
-            value={websiteName}
-            onChange={(e) => setWebsiteName(e.target.value)}
-          />
-        </div>
+    <>
+      <div className="max-w-md mx-auto p-4">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          {editData ? "Edit Website" : "Add Website"}
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+        >
+          <div className="mb-4 flex items-center border-b border-gray-300 py-2">
+            <FaUniversity className="text-gray-600 mr-3" />
+            <input
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
+              type="text"
+              placeholder="Website Name"
+              disabled={editData}
+              style={{ cursor: editData ? "not-allowed" : "default" }}
+              aria-label="Website Name"
+              value={websiteName}
+              onChange={(e) => setWebsiteName(e.target.value)}
+            />
+          </div>
 
-        <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-          <FaCode className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
-            type="text"
-            placeholder="URL"
-            aria-label="URL"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
-        </div>
+          <div className="mb-4 flex items-center border-b border-gray-300 py-2">
+            <FaCode className="text-gray-600 mr-3" />
+            <input
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
+              type="text"
+              placeholder="URL"
+              aria-label="URL"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
 
-        <div className="mb-6 flex items-center border-b border-gray-300 py-2">
-          <FaMoneyBillWave className="text-gray-600 mr-3" />
-          <input
-            className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
-            type="number"
-            step="0.1"
-            disabled={editData}
-            style={{ cursor: editData ? "not-allowed" : "default" }}
-            placeholder="Current Balance"
-            aria-label="Current Balance"
-            value={currentBalance}
-            onChange={(e) => setCurrentBalance(e.target.value)}
-          />
-        </div>
+          <div className="mb-6 flex items-center border-b border-gray-300 py-2">
+            <FaMoneyBillWave className="text-gray-600 mr-3" />
+            <input
+              className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
+              type="number"
+              step="0.1"
+              disabled={editData}
+              style={{ cursor: editData ? "not-allowed" : "default" }}
+              placeholder="Current Balance"
+              aria-label="Current Balance"
+              value={currentBalance}
+              onChange={(e) => setCurrentBalance(e.target.value)}
+            />
+          </div>
 
-        <div className="flex items-center justify-center">
-          <button
-            className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            {editData ? "Update" : "Add"}
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="flex items-center justify-center">
+            <button
+              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              {editData ? "Update" : "Add"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <FullScreenLoader loading={loading} />
+    </>
   );
 };
 
