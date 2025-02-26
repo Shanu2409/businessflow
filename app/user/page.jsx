@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
+import debounce from "lodash.debounce";
 import AddBankForm from "@/components/AddBankForm";
 import Navbar from "@/components/Navbar";
 import { Table } from "@/components/Table";
@@ -20,12 +21,10 @@ const PageContent = () => {
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
 
-  const fetchUserData = async () => {
-    const searchQuery = searchParams.get("search") || "";
-
+  const fetchUserData = async (searchQuery, pageNumber) => {
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search || searchQuery}&page=${page}&limit=20`
+        `/api/users?search=${searchQuery}&page=${pageNumber}&limit=20`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
@@ -34,12 +33,20 @@ const PageContent = () => {
     }
   };
 
+  // Debounced function to reduce API calls on search input change
+  const debouncedFetchUserData = useCallback(
+    debounce((searchQuery, pageNumber) => {
+      fetchUserData(searchQuery, pageNumber);
+    }, 300), // 500ms delay
+    []
+  );
+
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this user account?")) {
       try {
         const response = await axios.delete(`/api/users/${id}`);
         toast.success(response?.data?.message);
-        fetchUserData();
+        fetchUserData(search, page);
       } catch (error) {
         console.error("Error deleting user:", error);
       }
@@ -54,7 +61,6 @@ const PageContent = () => {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
       }
-
       console.log(responseData);
     } catch (error) {
       console.error("Error fetching bank data:", error);
@@ -66,8 +72,9 @@ const PageContent = () => {
     setShowAddUserForm(true);
   };
 
+  // Fetch users when `search` or `page` changes (using debounce for search)
   useEffect(() => {
-    fetchUserData();
+    debouncedFetchUserData(search, page);
   }, [search, page]);
 
   return (
@@ -98,7 +105,7 @@ const PageContent = () => {
               fetchWebsiteList={fetchWebsiteList}
               editData={editData}
               setShowAddUserForm={setShowAddUserForm}
-              fetchData={fetchUserData}
+              fetchData={() => fetchUserData(search, page)}
             />
           </div>
         )}
@@ -107,7 +114,7 @@ const PageContent = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <Table
             setSearch={setSearch}
-            fetchData={fetchUserData}
+            fetchData={() => fetchUserData(search, page)}
             rows={data}
             totalData={totalData}
             showChecknRecheck={false}
