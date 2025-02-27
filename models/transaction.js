@@ -14,7 +14,6 @@ const transactionSchema = new mongoose.Schema({
   re_check: { type: Boolean, default: false },
   created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
-  ttlExpiresAt: { type: Date, expires: "3600s" },
 });
 
 const Transaction =

@@ -6,7 +6,6 @@ const websiteSchema = new mongoose.Schema({
   current_balance: { type: Number },
   created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
-  ttlExpiresAt: { type: Date, expires: "3600s" },
 });
 
 const Website =
