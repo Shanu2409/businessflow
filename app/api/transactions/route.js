@@ -117,12 +117,33 @@ export async function GET(request) {
     const totalData = await Transaction.countDocuments(query);
 
     // Get paginated bank data
-    const banks = await Transaction.find(query, { __v: 0, _id: 0 })
+    const banks = await Transaction.find(query, { __v: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
 
     return NextResponse.json({ data: banks, totalData });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ Message: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const field = searchParams.get("field") || "";
+    const value = searchParams.get("value") || "";
+    const tid = searchParams.get("tid") || "";
+
+    await connection();
+
+    const result = await Transaction.updateMany(
+      { _id: tid },
+      { $set: { [field]: value } }
+    );
+
+    return NextResponse.json({ Message: "Data updated successfully" });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });

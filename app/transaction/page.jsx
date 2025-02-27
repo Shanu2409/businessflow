@@ -115,7 +115,7 @@ const PageContent = () => {
               handleDelete={handleDelete}
               handleIsEdit={handleEdit}
               showCheckRecheck={true}
-              showDelete={false}
+              showDelete={true}
               showEdit={false}
             />
           </div>

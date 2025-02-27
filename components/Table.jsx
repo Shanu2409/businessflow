@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -8,6 +9,7 @@ import {
   FaEdit,
   FaTrash,
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 export const Table = ({
   rows,
@@ -78,6 +80,25 @@ export const Table = ({
     return entry;
   };
 
+  const handleStatusChange = async (id, key, value) => {
+    if (confirm("Are you sure you want to change this status?")) {
+      try {
+        const response = await axios.put(
+          `/api/transactions?field=${key}&value=${value}&tid=${id}`
+        );
+
+        if (response.status === 200) {
+          toast.success("Status updated successfully");
+          fetchData(); // Refresh data after update
+        } else {
+          console.error("Failed to update status", response);
+        }
+      } catch (error) {
+        toast.error("Error updating status");
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col-reverse md:flex-row space-y-4 md:space-y-0 md:space-x-4">
       {/* Table Section with Horizontal Scroll */}
@@ -131,7 +152,11 @@ export const Table = ({
                               type="checkbox"
                               checked={row.check}
                               onChange={(e) =>
-                                changeCheckStatus(row, e.target.checked)
+                                handleStatusChange(
+                                  row._id,
+                                  "check",
+                                  e.target.checked
+                                )
                               }
                             />
                           </td>
@@ -141,7 +166,11 @@ export const Table = ({
                               checked={row.re_check}
                               disabled={!row.check}
                               onChange={(e) =>
-                                changeRecheckStatus(row, e.target.checked)
+                                handleStatusChange(
+                                  row._id,
+                                  "re_check",
+                                  e.target.checked
+                                )
                               }
                             />
                           </td>
@@ -190,7 +219,9 @@ export const Table = ({
                               onClick={() =>
                                 handleDelete(
                                   Object.entries(row).find(([key, value]) =>
-                                    key.includes("name")
+                                    key.includes("_id")
+                                      ? value
+                                      : key.includes("name")
                                   )[1]
                                 )
                               }
