@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FaUniversity,
   FaGlobe,
@@ -25,52 +25,14 @@ const AddTransactionForm = ({
   const [loading, setLoading] = useState(false);
 
   const [websites, setWebsites] = useState([]);
-  const [userList, setUserList] = useState([]);
+  const [userList, setUserList] = useState({});
   const [bankList, setBankList] = useState([]);
 
-  // Fetch required data (websites, banks, users)
-  const fetchLists = async () => {
-    setLoading(true);
-    try {
-      const [websiteRes, bankRes, userRes] = await Promise.all([
-        axios.get(`/api/websites?onlyNames=true`),
-        axios.get(`/api/banks?onlyNames=true`),
-        axios.get(`/api/users?onlyNames=true`),
-      ]);
-
-      const websiteData = websiteRes.data?.data || [];
-      const bankData = bankRes.data?.data || [];
-      const userData = userRes.data?.data || [];
-
-      setWebsites(websiteData);
-      setBankList(bankData);
-      setUserList(userData);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("websites", JSON.stringify(websiteData));
-        sessionStorage.setItem("banks", JSON.stringify(bankData));
-        sessionStorage.setItem("users", JSON.stringify(userData));
-      }
-    } catch (error) {
-      console.error("Error fetching lists:", error);
-    }
-
-    setLoading(false);
-  };
-
   useEffect(() => {
-    // Load data from sessionStorage if available, otherwise fetch from API
     if (typeof window !== "undefined") {
       setWebsites(JSON.parse(sessionStorage.getItem("websites")) || []);
       setBankList(JSON.parse(sessionStorage.getItem("banks")) || []);
-      setUserList(JSON.parse(sessionStorage.getItem("users")) || []);
-    }
-
-    if (
-      !sessionStorage.getItem("websites") &&
-      !sessionStorage.getItem("banks") &&
-      !sessionStorage.getItem("users")
-    ) {
-      fetchLists();
+      setUserList(JSON.parse(sessionStorage.getItem("users")) || {});
     }
 
     if (editData) {
@@ -81,6 +43,13 @@ const AddTransactionForm = ({
       setAmount(editData.amount || "");
     }
   }, [editData]);
+
+  // Update website name when a user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      setSelectedWebsite(userList[selectedUser] || ""); // Get the mapped website name
+    }
+  }, [selectedUser, userList]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -137,35 +106,32 @@ const AddTransactionForm = ({
           className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
         >
           {/* Username Dropdown */}
-          <Dropdown
-            icon={<FaUniversity className="text-gray-600 mr-3" />}
+          {/* User Dropdown with Search */}
+          <DropdownMenu
             label="Select a User"
-            options={userList}
+            options={Object.keys(userList)}
             value={selectedUser}
             onChange={setSelectedUser}
           />
 
-          {/* Website Dropdown */}
-          <Dropdown
-            icon={<FaGlobe className="text-gray-600 mr-3" />}
+          {/* Website Dropdown with Search */}
+          <DropdownMenu
             label="Select a Website"
             options={websites}
             value={selectedWebsite}
             onChange={setSelectedWebsite}
           />
 
-          {/* Bank Dropdown */}
-          <Dropdown
-            icon={<FaBuilding className="text-gray-600 mr-3" />}
+          {/* Bank Dropdown with Search */}
+          <DropdownMenu
             label="Select a Bank"
             options={bankList}
             value={selectedBank}
             onChange={setSelectedBank}
           />
 
-          {/* Transaction Type Dropdown */}
-          <Dropdown
-            icon={<FaExchangeAlt className="text-gray-600 mr-3" />}
+          {/* Transaction Type Dropdown (Fixed Options) */}
+          <DropdownMenu
             label="Select Transaction Type"
             options={["Deposit", "Withdraw"]}
             value={transactionType}
@@ -199,25 +165,75 @@ const AddTransactionForm = ({
 };
 
 // Dropdown Component
-const Dropdown = ({ icon, label, options, value, onChange }) => (
-  <div className="mb-4 flex items-center border-b border-gray-300 py-2">
-    {icon}
-    <select
-      className="appearance-none bg-transparent border-none w-full text-gray-700 py-2 px-2 leading-tight focus:outline-none"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="" disabled>
-        {label}
-      </option>
-      {options.map((option, index) => (
-        <option key={index} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+
+const DropdownMenu = ({ label, options, value, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Filter options based on search input
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="relative mb-4" ref={dropdownRef}>
+      <label className="block text-gray-700 font-bold mb-1">{label}</label>
+      <div
+        className="border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{value || `Select ${label}`}</span>
+        <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg z-10">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full p-2 border-b border-gray-300 focus:outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="max-h-40 overflow-y-auto">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <div
+                  key={option}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                    setSearchTerm(""); // Reset search term
+                  }}
+                >
+                  {option}
+                </div>
+              ))
+            ) : (
+              <p className="p-2 text-gray-500">No options found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Input Field Component
 const InputField = ({ icon, type, placeholder, value, onChange }) => (

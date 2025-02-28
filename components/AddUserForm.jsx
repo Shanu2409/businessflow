@@ -17,7 +17,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   const [email, setEmail] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
   const [isActive, setIsActive] = useState(true); // Default to active
-  cosnt[(loading, setLoading)] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   let websites = [];
   if (typeof window !== "undefined") {
@@ -225,7 +225,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
           </div>
         </form>
       </div>
-      <FullScreenLoader isLoading={isLoading} />
+      <FullScreenLoader isLoading={loading} />
     </>
   );
 };

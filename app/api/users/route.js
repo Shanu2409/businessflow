@@ -6,8 +6,14 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { username, website_name, email, created_by, active, current_balance } =
-      await request.json();
+    const {
+      username,
+      website_name,
+      email,
+      created_by,
+      active,
+      current_balance,
+    } = await request.json();
 
     // only for double security ask client first
 
@@ -49,8 +55,16 @@ export async function GET(request) {
     await connection();
 
     if (onlyNames === "true") {
-      const allNames = await UserModal.distinct("username");
-      return NextResponse.json({ data: allNames });
+      const userNames = await UserModal.find(
+        {},
+        { _id: 0, username: 1, website_name: 1 }
+      ).then((users) =>
+        users.reduce((acc, cur) => {
+          acc[cur.username] = cur.website_name;
+          return acc;
+        }, {})
+      );
+      return NextResponse.json({ data: userNames });
     }
 
     const query = {
