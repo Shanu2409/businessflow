@@ -30,6 +30,26 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 
+  const fetchBankList = async () => {
+    setLoading(true);
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/banks?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchBankList();
+  }, [])
+
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
     setLoading(true);

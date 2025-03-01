@@ -51,17 +51,19 @@ const AddTransactionForm = ({
     }
   }, [selectedUser, userList]);
 
-  const fetchBankData = async () => {
+  const fetchBankList = async () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search || searchParams.get("search") || ""}&page=${page}&limit=${itemsPerPage}`
+        `/api/banks?onlyNames=true`
       );
-      setData(responseData?.data);
-      setTotalData(responseData?.totalData);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
+      }
     } catch (error) {
-      console.error("Error fetching bank data:", error);
+      console.error("Error fetching user data:", error);
     }
+
     setLoading(false);
   };
 
