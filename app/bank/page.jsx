@@ -21,6 +21,22 @@ const PageContent = () => {
 
   const itemsPerPage = 20;
 
+  const fetchBankList = async () => {
+    setLoading(true);
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/banks?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+
+    setLoading(false);
+  };
+
   const fetchBankData = async () => {
     setLoading(true);
     try {
@@ -55,6 +71,10 @@ const PageContent = () => {
   useEffect(() => {
     fetchBankData();
   }, [search, page]);
+
+  useEffect(() => {
+    fetchBankList();
+  }, [])
 
   // Format data for display
   const formatEntry = (entry, key) => {

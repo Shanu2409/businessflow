@@ -51,6 +51,24 @@ const AddTransactionForm = ({
     }
   }, [selectedUser, userList]);
 
+  const fetchBankData = async () => {
+    setLoading(true);
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/banks?search=${search || searchParams.get("search") || ""}&page=${page}&limit=${itemsPerPage}`
+      );
+      setData(responseData?.data);
+      setTotalData(responseData?.totalData);
+    } catch (error) {
+      console.error("Error fetching bank data:", error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+      fetchBankList();
+    }, [])
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
