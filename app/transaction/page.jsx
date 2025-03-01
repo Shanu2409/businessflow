@@ -140,19 +140,17 @@ const PageContent = () => {
         {/* Header & Form Toggle */}
         <div className="bg-white px-6 py-4 rounded-lg shadow-md">
           <div
-            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${
-              showTransactionForm ? "mb-4" : ""
-            }`}
+            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${showTransactionForm ? "mb-4" : ""
+              }`}
           >
             <h1 className="text-3xl font-semibold text-gray-800 transition-all duration-300">
               {showTransactionForm ? "Add New Transaction" : "Transactions"}
             </h1>
             <button
-              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${
-                showTransactionForm
+              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${showTransactionForm
                   ? "bg-red-500 hover:bg-red-600 text-white"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
+                }`}
               onClick={toggleForm}
             >
               {showTransactionForm ? "Cancel" : "Add Transaction"}
@@ -246,12 +244,19 @@ const PageContent = () => {
                   currentRows.map((row, rowIndex) => (
                     <tr
                       key={rowIndex}
-                      className={`text-black ${
-                        row.transaction_type === "Deposit"
-                          ? "text-green-800 bg-green-100"
-                          : "text-red-800 bg-red-100"
-                      }`}
+                      className={`text-black ${row.check == "true" && row.re_check == "true"
+                        ? "text-gray-800 bg-gray-100"
+                        : row.check == "true"
+                        ? "text-yellow-800 bg-yellow-100"
+                        : row.re_check == "true"
+                        ? "text-gray-800 bg-gray-100"
+                        : row.transaction_type === "Deposit"
+                        ? "text-green-800 bg-green-100"
+                        : "text-red-800 bg-red-100"
+                    }`}
+                    
                     >
+
                       <td className="px-4 py-2 border border-gray-600 text-center">
                         <input
                           type="checkbox"

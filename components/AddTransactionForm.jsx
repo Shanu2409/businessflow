@@ -118,6 +118,7 @@ const AddTransactionForm = ({
           <DropdownMenu
             label="Select a Website"
             options={websites}
+            isDisabled={true}
             value={selectedWebsite}
             onChange={setSelectedWebsite}
           />
@@ -166,7 +167,7 @@ const AddTransactionForm = ({
 
 // Dropdown Component
 
-const DropdownMenu = ({ label, options, value, onChange }) => {
+const DropdownMenu = ({ label, options, value, onChange,  isDisabled=false }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -194,8 +195,12 @@ const DropdownMenu = ({ label, options, value, onChange }) => {
     <div className="relative mb-4" ref={dropdownRef}>
       <label className="block text-gray-700 font-bold mb-1">{label}</label>
       <div
-        className="border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white"
-        onClick={() => setIsOpen(!isOpen)}
+        className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white `}
+        onClick={() => {
+          if(!isDisabled) {
+            setIsOpen(!isOpen)
+          }
+        }}
       >
         <span>{value || `Select ${label}`}</span>
         <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
