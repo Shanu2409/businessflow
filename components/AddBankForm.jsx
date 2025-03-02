@@ -20,6 +20,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     account_number: "",
     ifsc_code: "",
     current_balance: "",
+    check: false,
   });
 
   // Handle Input Change

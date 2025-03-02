@@ -29,15 +29,18 @@ export async function POST(request) {
 
     // Ensure fetched balances are numbers
     const bankBalance = bank ? Number(bank.current_balance) : 0;
-    const websiteBalance = website ? Number(website.current_balance) : 0;
 
     // Perform transaction updates
     if (transaction_type === "Deposit") {
       await Bank.updateOne(
         { bank_name },
-        { $inc: { current_balance: numericAmount } },
+        {
+          $inc: { current_balance: numericAmount },
+          $set: { check: false }, // Corrected placement
+        },
         { upsert: false }
       );
+
       await Website.updateOne(
         { website_name },
         { $inc: { current_balance: -numericAmount } },
@@ -46,9 +49,13 @@ export async function POST(request) {
     } else if (transaction_type === "Withdraw") {
       await Bank.updateOne(
         { bank_name },
-        { $inc: { current_balance: -numericAmount } },
+        {
+          $inc: { current_balance: -numericAmount },
+          $set: { check: false }, // Corrected placement
+        },
         { upsert: false }
       );
+
       await Website.updateOne(
         { website_name },
         { $inc: { current_balance: numericAmount } },

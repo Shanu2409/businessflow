@@ -52,24 +52,56 @@ const AddTransactionForm = ({
   }, [selectedUser, userList]);
 
   const fetchBankList = async () => {
-    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/banks?onlyNames=true`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
+        setBankList(responseData?.data || []); // ✅ Update state here
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
+  };
 
-    setLoading(false);
+  const fetchWebsiteList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/websites?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
+        setWebsites(responseData?.data || {});
+      }
+    } catch (error) {
+      console.error("Error fetching website data:", error);
+    }
+  };
+
+  const fetchUserList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/users?onlyNames=true`
+      );
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("users", JSON.stringify(responseData?.data));
+        setUserList(responseData?.data || {});
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
   };
 
   useEffect(() => {
-      fetchBankList();
-    }, [])
+    setLoading(true);
+
+    fetchBankList();
+    fetchWebsiteList();
+    fetchUserList();
+
+    setLoading(false);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,77 +149,84 @@ const AddTransactionForm = ({
 
   return (
     <>
-      <div className="max-w-md mx-auto p-4">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          {editData ? "Edit Transaction" : "Add Transaction"}
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-        >
-          {/* Username Dropdown */}
-          {/* User Dropdown with Search */}
-          <DropdownMenu
-            label="Select a User"
-            options={Object.keys(userList)}
-            value={selectedUser}
-            onChange={setSelectedUser}
-          />
-
-          {/* Website Dropdown with Search */}
-          <DropdownMenu
-            label="Select a Website"
-            options={websites}
-            isDisabled={true}
-            value={selectedWebsite}
-            onChange={setSelectedWebsite}
-          />
-
-          {/* Bank Dropdown with Search */}
-          <DropdownMenu
-            label="Select a Bank"
-            options={bankList}
-            value={selectedBank}
-            onChange={setSelectedBank}
-          />
-
-          {/* Transaction Type Dropdown (Fixed Options) */}
-          <DropdownMenu
-            label="Select Transaction Type"
-            options={["Deposit", "Withdraw"]}
-            value={transactionType}
-            onChange={setTransactionType}
-          />
-
-          {/* Amount Input */}
-          <InputField
-            icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
-            type="number"
-            placeholder="Enter Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-
-          {/* Submit Button */}
-          <div className="flex items-center justify-center">
-            <button
-              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-              type="submit"
-            >
-              {editData ? "Update" : "Add"}
-            </button>
-          </div>
-        </form>
-
+      {loading ? (
         <FullScreenLoader isLoading={loading} />
-      </div>
+      ) : (
+        <div className="max-w-md mx-auto p-4">
+          <h2 className="text-2xl font-bold text-center mb-6">
+            {editData ? "Edit Transaction" : "Add Transaction"}
+          </h2>
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+          >
+            {/* Username Dropdown */}
+            <DropdownMenu
+              label="Select a User"
+              options={Object.keys(userList)}
+              value={selectedUser}
+              onChange={setSelectedUser}
+            />
+
+            {/* Website Dropdown (Auto-selected based on user) */}
+            <DropdownMenu
+              label="Select a Website"
+              options={websites}
+              isDisabled={true}
+              value={selectedWebsite}
+              onChange={setSelectedWebsite}
+            />
+
+            {/* Bank Dropdown */}
+            <DropdownMenu
+              label="Select a Bank"
+              options={bankList}
+              value={selectedBank}
+              onChange={setSelectedBank}
+            />
+
+            {/* Transaction Type */}
+            <DropdownMenu
+              label="Select Transaction Type"
+              options={["Deposit", "Withdraw"]}
+              value={transactionType}
+              onChange={setTransactionType}
+            />
+
+            {/* Amount Input */}
+            <InputField
+              icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
+              type="number"
+              placeholder="Enter Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+
+            {/* Submit Button */}
+            <div className="flex items-center justify-center">
+              <button
+                className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+                type="submit"
+              >
+                {editData ? "Update" : "Add"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 };
 
 // Dropdown Component
 
-const DropdownMenu = ({ label, options, value, onChange,  isDisabled=false }) => {
+const DropdownMenu = ({
+  label,
+  options,
+  value,
+  onChange,
+  isDisabled = false,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -217,8 +256,8 @@ const DropdownMenu = ({ label, options, value, onChange,  isDisabled=false }) =>
       <div
         className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white `}
         onClick={() => {
-          if(!isDisabled) {
-            setIsOpen(!isOpen)
+          if (!isDisabled) {
+            setIsOpen(!isOpen);
           }
         }}
       >
@@ -240,7 +279,7 @@ const DropdownMenu = ({ label, options, value, onChange,  isDisabled=false }) =>
               filteredOptions.map((option) => (
                 <div
                   key={option}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  className="p-2 cursor-pointer"
                   onClick={() => {
                     onChange(option);
                     setIsOpen(false);

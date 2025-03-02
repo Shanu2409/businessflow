@@ -46,10 +46,6 @@ const PageContent = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchBankList();
-  }, [])
-
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -160,17 +156,19 @@ const PageContent = () => {
         {/* Header & Form Toggle */}
         <div className="bg-white px-6 py-4 rounded-lg shadow-md">
           <div
-            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${showTransactionForm ? "mb-4" : ""
-              }`}
+            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${
+              showTransactionForm ? "mb-4" : ""
+            }`}
           >
             <h1 className="text-3xl font-semibold text-gray-800 transition-all duration-300">
               {showTransactionForm ? "Add New Transaction" : "Transactions"}
             </h1>
             <button
-              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${showTransactionForm
+              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${
+                showTransactionForm
                   ? "bg-red-500 hover:bg-red-600 text-white"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
-                }`}
+              }`}
               onClick={toggleForm}
             >
               {showTransactionForm ? "Cancel" : "Add Transaction"}
@@ -218,6 +216,33 @@ const PageContent = () => {
         {/* Transactions Table */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="w-full overflow-x-auto">
+            {/* Pagination Controls */}
+            {data.length > 0 && (
+              <div className="flex justify-between items-center m-4">
+                <span className="text-gray-700">
+                  Total Data: {totalData} | Page {page} of {computedTotalPages}
+                </span>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="p-2 bg-gray-200 rounded"
+                  >
+                    <FaChevronLeft />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPage((prev) => Math.min(prev + 1, computedTotalPages))
+                    }
+                    disabled={page === computedTotalPages}
+                    className="p-2 bg-gray-200 rounded"
+                  >
+                    <FaChevronRight />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <table className="w-full border-collapse whitespace-nowrap">
               <thead className="text-left text-white bg-primary">
                 <tr>
@@ -264,19 +289,18 @@ const PageContent = () => {
                   currentRows.map((row, rowIndex) => (
                     <tr
                       key={rowIndex}
-                      className={`text-black ${row.check == "true" && row.re_check == "true"
-                        ? "text-gray-800 bg-gray-100"
-                        : row.check == "true"
-                        ? "text-yellow-800 bg-yellow-100"
-                        : row.re_check == "true"
-                        ? "text-gray-800 bg-gray-100"
-                        : row.transaction_type === "Deposit"
-                        ? "text-green-800 bg-green-100"
-                        : "text-red-800 bg-red-100"
-                    }`}
-                    
+                      className={`text-black ${
+                        row.check == "true" && row.re_check == "true"
+                          ? "text-gray-800 bg-gray-100"
+                          : row.check == "true"
+                          ? "bg-yellow-100"
+                          : row.re_check == "true"
+                          ? "text-gray-800 bg-gray-100"
+                          : row.transaction_type === "Deposit"
+                          ? "text-green-800 bg-green-100"
+                          : "text-red-800 bg-red-100"
+                      }`}
                     >
-
                       <td className="px-4 py-2 border border-gray-600 text-center">
                         <input
                           type="checkbox"

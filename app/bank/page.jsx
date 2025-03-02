@@ -11,7 +11,9 @@ import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
 
 const PageContent = () => {
   const searchParams = useSearchParams();
-  const [showAddBankForm, setShowAddBankForm] = useState(searchParams.get("add") === "true");
+  const [showAddBankForm, setShowAddBankForm] = useState(
+    searchParams.get("add") === "true"
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
@@ -21,12 +23,13 @@ const PageContent = () => {
 
   const itemsPerPage = 20;
 
-
   const fetchBankData = async () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search || searchParams.get("search") || ""}&page=${page}&limit=${itemsPerPage}`
+        `/api/banks?search=${
+          search || searchParams.get("search") || ""
+        }&page=${page}&limit=${itemsPerPage}`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
@@ -57,7 +60,26 @@ const PageContent = () => {
     fetchBankData();
   }, [search, page]);
 
-  
+  const handleStatusChange = async (bank_name, value) => {
+    if (confirm("Are you sure you want to change this status?")) {
+      try {
+        const response = await axios.put(
+          `/api/banks?value=${value}&bank_name=${bank_name}`
+        );
+
+        console.log(response);
+
+        if (response.status === 200) {
+          toast.success("Status updated successfully");
+          fetchBankData();
+        } else {
+          toast.error("Failed to update status.");
+        }
+      } catch (error) {
+        toast.error("Error updating status.");
+      }
+    }
+  };
 
   // Format data for display
   const formatEntry = (entry, key) => {
@@ -69,7 +91,10 @@ const PageContent = () => {
 
   // Compute total pages
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
-  const currentRows = data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const currentRows = data.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
   const displayColumns = data.length > 0 ? Object.keys(data[0]) : [];
 
   return (
@@ -106,31 +131,119 @@ const PageContent = () => {
 
           {/* Table Section */}
           <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+            {/* Pagination Controls */}
+            {data.length > 0 && (
+              <div className="flex justify-between items-center m-4">
+                <span className="text-gray-700">
+                  Total Data: {totalData} | Page {page} of {computedTotalPages}
+                </span>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="p-2 bg-gray-200 rounded"
+                  >
+                    <FaChevronLeft />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPage((prev) => Math.min(prev + 1, computedTotalPages))
+                    }
+                    disabled={page === computedTotalPages}
+                    className="p-2 bg-gray-200 rounded"
+                  >
+                    <FaChevronRight />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {data.length > 0 ? (
               <table className="w-full border-collapse">
-                <thead className="text-left text-white bg-primary">
+                <thead className="text-left text-white bg-secondary">
                   <tr>
-                    {displayColumns.map((col, index) => (
-                      <th key={index} className="px-4 py-2 border border-gray-600 text-sm text-center">
-                        {col.replace("_", " ").toUpperCase()}
-                      </th>
-                    ))}
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">ACTIONS</th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Check
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Bank Name
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      IFSC Code
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Account Number
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Current Balance
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Created By
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Created At
+                    </th>
+
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      ACTIONS
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentRows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {displayColumns.map((col, index) => (
-                        <td key={index} className="px-4 py-2 border border-gray-600">
-                          {formatEntry(row[col], col)}
-                        </td>
-                      ))}
+                    <tr
+                      key={rowIndex}
+                      className={`text-center ${
+                        row.check ? "bg-yellow-100" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-2 border border-gray-600 text-center">
+                        <input
+                          type="checkbox"
+                          checked={row.check}
+                          onChange={async (e) => {
+                            await handleStatusChange(
+                              row.bank_name,
+                              e.target.checked
+                            );
+                          }}
+                        />
+                      </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        <button onClick={() => handleIsEdit(row)} className="text-blue-500 mr-2">
+                        {row?.bank_name}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row?.ifsc_code}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row?.account_number?.toString()}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row?.current_balance?.toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row?.created_by}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {new Intl.DateTimeFormat("en-IN", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).format(new Date(row?.createdAt))}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        <button
+                          onClick={() => handleIsEdit(row)}
+                          className="text-blue-500 mr-2"
+                        >
                           <FaEdit />
                         </button>
-                        <button onClick={() => handleDelete(row._id)} className="text-red-500 hover:text-red-700">
+                        <button
+                          onClick={() => handleDelete(row.bank_name)}
+                          className="text-red-500 hover:text-red-700"
+                        >
                           <FaTrash />
                         </button>
                       </td>
@@ -139,22 +252,9 @@ const PageContent = () => {
                 </tbody>
               </table>
             ) : (
-              <h1 className="text-center mt-4">No results... Try expanding the search</h1>
-            )}
-
-            {/* Pagination Controls */}
-            {data.length > 0 && (
-              <div className="flex justify-between items-center mt-4">
-                <span className="text-gray-700">Total Data: {totalData} | Page {page} of {computedTotalPages}</span>
-                <div className="flex items-center space-x-4">
-                  <button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1} className="p-2 bg-gray-200 rounded">
-                    <FaChevronLeft />
-                  </button>
-                  <button onClick={() => setPage((prev) => Math.min(prev + 1, computedTotalPages))} disabled={page === computedTotalPages} className="p-2 bg-gray-200 rounded">
-                    <FaChevronRight />
-                  </button>
-                </div>
-              </div>
+              <h1 className="text-center mt-4">
+                No results... Try expanding the search
+              </h1>
             )}
           </div>
         </div>

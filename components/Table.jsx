@@ -104,6 +104,36 @@ export const Table = ({
       {/* Table Section with Horizontal Scroll */}
       <div className="w-full md:w-3/4 overflow-x-auto">
         <div className="min-w-full">
+          {/* Pagination Controls */}
+          {rows.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center m-4">
+              <div className="text-gray-700 mb-2 sm:mb-0">
+                Total Data: {totalData} | Data per Page: {itemsPerPage}
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={page === 1}
+                  className="p-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  <FaChevronLeft />
+                </button>
+                <span className="text-gray-700">
+                  Page {page} of {computedTotalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setPage((prev) => Math.min(prev + 1, computedTotalPages))
+                  }
+                  disabled={page === computedTotalPages}
+                  className="p-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+            </div>
+          )}
+
           {rows.length > 0 ? (
             <table className="w-full border-collapse whitespace-nowrap">
               <thead className="text-left text-white bg-primary">
@@ -243,36 +273,6 @@ export const Table = ({
             </h1>
           )}
         </div>
-
-        {/* Pagination Controls */}
-        {rows.length > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-4">
-            <div className="text-gray-700 mb-2 sm:mb-0">
-              Total Data: {totalData} | Data per Page: {itemsPerPage}
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                disabled={page === 1}
-                className="p-2 bg-gray-200 rounded disabled:opacity-50"
-              >
-                <FaChevronLeft />
-              </button>
-              <span className="text-gray-700">
-                Page {page} of {computedTotalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setPage((prev) => Math.min(prev + 1, computedTotalPages))
-                }
-                disabled={page === computedTotalPages}
-                className="p-2 bg-gray-200 rounded disabled:opacity-50"
-              >
-                <FaChevronRight />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Filter & Sorting Sidebar */}

@@ -71,3 +71,24 @@ export async function GET(request) {
     return NextResponse.json({ Message: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+
+    const value = searchParams.get("value") || "";
+    const bank_name = searchParams.get("bank_name") || "";
+
+    await connection();
+
+    const result = await Bank.updateOne(
+      { bank_name: bank_name },
+      { $set: { check: value } }
+    );
+
+    return NextResponse.json({ Message: "Data updated successfully", result });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ Message: error.message }, { status: 500 });
+  }
+}
