@@ -37,7 +37,7 @@ export async function GET(request) {
     await connection();
 
     const query = {
-        // type: "user", // Ensuring only users are fetched
+        type: "user", // Ensuring only users are fetched
         $or: [
           { username: { $regex: search, $options: "i" } },
           { email: { $regex: search, $options: "i" } },
