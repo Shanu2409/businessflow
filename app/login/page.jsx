@@ -2,25 +2,23 @@
 
 export const dynamic = "force-dynamic"; // Disable static prerendering
 
-import FullScreenLoader from "@/components/FullScreenLoader";
-import axios from "axios";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import axios from "axios";
 import { toast } from "react-toastify";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 const Page = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  const handleUsernameChange = (e) => {
-    setUsername(e.target.value);
-  };
-
-  const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -44,13 +42,9 @@ const Page = () => {
       }
 
       toast.success("Login Successful");
-
       router.push("/");
     } catch (error) {
-      console.log(
-        "Login failed:",
-        error.response ? error.response.data : error.message
-      );
+      console.log("Login failed:", error.response ? error.response.data : error.message);
       toast.error("Something went wrong");
     }
 
@@ -59,46 +53,64 @@ const Page = () => {
 
   return (
     <>
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="username" className="block text-gray-700">
-                Username:
-              </label>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 to-indigo-500 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Welcome</h1>
+          <p className="text-center text-gray-600 mb-4">Login to your account</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Username Input */}
+            <div>
+              <label htmlFor="username" className="block text-gray-700 font-medium">Username</label>
               <input
                 type="text"
                 id="username"
                 name="username"
                 value={username}
-                onChange={handleUsernameChange}
-                className="mt-1 p-2 w-full border rounded"
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Enter your username"
               />
             </div>
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-gray-700">
-                Password:
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={password}
-                onChange={handlePasswordChange}
-                className="mt-1 p-2 w-full border rounded"
-              />
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-gray-700 font-medium">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none pr-10"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-4 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+              className={`w-full bg-blue-500 text-white py-3 rounded-lg font-semibold transition duration-300 ${
+                loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+              }`}
+              disabled={loading}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>
       </div>
 
+      {/* Full-Screen Loader */}
       <FullScreenLoader isLoading={loading} />
     </>
   );

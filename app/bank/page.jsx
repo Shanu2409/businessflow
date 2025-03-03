@@ -7,7 +7,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
 import FullScreenLoader from "@/components/FullScreenLoader";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import { FaChevronDown, FaChevronLeft, FaChevronRight, FaChevronUp, FaEdit, FaTrash } from "react-icons/fa";
 
 const PageContent = () => {
   const searchParams = useSearchParams();
@@ -20,6 +20,8 @@ const PageContent = () => {
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(true);
+  
 
   const itemsPerPage = 20;
 
@@ -81,12 +83,9 @@ const PageContent = () => {
     }
   };
 
-  // Format data for display
-  const formatEntry = (entry, key) => {
-    if (typeof entry === "boolean") return entry ? "✅" : "❌";
-    if (key === "createdAt") return new Date(entry).toLocaleDateString("en-IN");
-    if (key === "current_balance") return `₹ ${entry.toLocaleString("en-IN")}`;
-    return entry;
+  const handleSearchChange = (e) => {
+    const value = e.target.value.toLowerCase();
+    setSearch(value);
   };
 
   // Compute total pages
@@ -157,6 +156,32 @@ const PageContent = () => {
                 </div>
               </div>
             )}
+
+            {/* Filter & Sorting Sidebar */}
+                    <div className="w-full mt-4">
+                      <div className="p-4 bg-white rounded-lg shadow-md">
+                        <button
+                          onClick={() => setIsFilterOpen(!isFilterOpen)}
+                          className="flex items-center w-full mb-4"
+                        >
+                          {isFilterOpen ? (
+                            <FaChevronUp className="mr-2" />
+                          ) : (
+                            <FaChevronDown className="mr-2" />
+                          )}
+                          <span className="text-lg font-semibold">Filter & Search</span>
+                        </button>
+                        {isFilterOpen && (
+                          <input
+                            type="text"
+                            placeholder="Search transactions..."
+                            value={search}
+                            onChange={handleSearchChange} // ✅ Dynamic search update
+                            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                          />
+                        )}
+                      </div>
+                    </div>
 
             {data.length > 0 ? (
               <table className="w-full border-collapse">

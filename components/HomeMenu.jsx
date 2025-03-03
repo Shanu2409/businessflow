@@ -23,7 +23,7 @@ const HomeMenu = () => {
   }
 
   if (user?.type === "admin") {
-    menuItems.push({ title: "ACCOUNTS", link: "/accounts" });
+    menuItems.push({ title: "ACCOUNTS", link: "/account" });
   }
 
   const fetchWebsiteList = async () => {

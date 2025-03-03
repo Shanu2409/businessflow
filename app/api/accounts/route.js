@@ -1,5 +1,5 @@
 import connection from "@/lib/mongodb";
-import UserModal from "@/models/userModal";
+import Account from "@/models/accountUser";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
@@ -8,23 +8,15 @@ export async function POST(request) {
 
     const {
       username,
-      website_name,
-      email,
-      created_by,
-      active,
-      current_balance,
+      password,
     } = await request.json();
 
-    const newWebsite = new UserModal({
+    const newAccount = new Account({
       username,
-      website_name,
-      email,
-      current_balance,
-      created_by,
-      active,
+      password,
     });
 
-    await newWebsite.save();
+    await newAccount.save();
 
     return NextResponse.json({
       Message: "User created successfully",
@@ -41,40 +33,28 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
-    const onlyNames = searchParams.get("onlyNames");
 
     await connection();
 
-    if (onlyNames === "true") {
-      const userNames = await UserModal.find(
-        {},
-        { _id: 0, username: 1, website_name: 1 }
-      ).then((users) =>
-        users.reduce((acc, cur) => {
-          acc[cur.username] = cur.website_name;
-          return acc;
-        }, {})
-      );
-      return NextResponse.json({ data: userNames });
-    }
-
     const query = {
-      $or: [
-        { username: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ],
-    };
+        // type: "user", // Ensuring only users are fetched
+        $or: [
+          { username: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      };
+      
 
     // Get the total count of documents matching the query
-    const totalData = await UserModal.countDocuments(query);
+    const totalData = await Account.countDocuments(query);
 
     // Get paginated bank data
-    const banks = await UserModal.find(query, { __v: 0, _id: 0 })
+    const accounts = await Account.find(query, { __v: 0, _id: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
 
-    return NextResponse.json({ data: banks, totalData });
+    return NextResponse.json({ data: accounts, totalData });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });
