@@ -20,7 +20,8 @@
     "react-spinners": "^0.15.0",
     "react-toastify": "^11.0.3",
     "styled-components": "^6.1.15",
-    "styled-jsx": "^5.1.6"
+    "styled-jsx": "^5.1.6",
+    "use-debounce": "^10.0.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

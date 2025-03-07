@@ -8,15 +8,18 @@ import {
   FaBuilding,
   FaExchangeAlt,
   FaMoneyBillWave,
+  FaPlus,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FullScreenLoader from "./FullScreenLoader";
+import { useRouter } from "next/navigation";
 
 const AddTransactionForm = ({
   setShowTransactionForm,
   fetchData,
   editData,
 }) => {
+  const router = useRouter();
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
   const [selectedBank, setSelectedBank] = useState("");
@@ -166,6 +169,7 @@ const AddTransactionForm = ({
               options={Object.keys(userList)}
               value={selectedUser}
               onChange={setSelectedUser}
+              addRoute="/user?add=true"
             />
 
             {/* Website Dropdown (Auto-selected based on user) */}
@@ -175,6 +179,7 @@ const AddTransactionForm = ({
               isDisabled={true}
               value={selectedWebsite}
               onChange={setSelectedWebsite}
+              addRoute="/website?add=true"
             />
 
             {/* Bank Dropdown */}
@@ -183,6 +188,7 @@ const AddTransactionForm = ({
               options={bankList}
               value={selectedBank}
               onChange={setSelectedBank}
+              addRoute="/bank?add=true"
             />
 
             {/* Transaction Type */}
@@ -219,17 +225,18 @@ const AddTransactionForm = ({
 };
 
 // Dropdown Component
-
 const DropdownMenu = ({
   label,
   options,
   value,
   onChange,
   isDisabled = false,
+  addRoute = null, // New prop for add button route
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const router = useRouter();
 
   // Filter options based on search input
   const filteredOptions = options.filter((option) =>
@@ -253,16 +260,27 @@ const DropdownMenu = ({
   return (
     <div className="relative mb-4" ref={dropdownRef}>
       <label className="block text-gray-700 font-bold mb-1">{label}</label>
-      <div
-        className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white `}
-        onClick={() => {
-          if (!isDisabled) {
-            setIsOpen(!isOpen);
-          }
-        }}
-      >
-        <span>{value || `Select ${label}`}</span>
-        <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
+      <div className="flex items-center">
+        <div
+          className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white flex-grow`}
+          onClick={() => {
+            if (!isDisabled) {
+              setIsOpen(!isOpen);
+            }
+          }}
+        >
+          <span>{value || `Select ${label}`}</span>
+          <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
+        </div>
+        {addRoute && (
+          <div
+            className="ml-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer"
+            title={`Add new ${label.toLowerCase()}`}
+            onClick={() => router.push(addRoute)}
+          >
+            <FaPlus className="text-secondary hover:text-primary" />
+          </div>
+        )}
       </div>
 
       {isOpen && (

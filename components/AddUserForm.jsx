@@ -8,11 +8,14 @@ import {
   FaGlobe,
   FaToggleOn,
   FaToggleOff,
+  FaPlus,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FullScreenLoader from "./FullScreenLoader";
+import { useRouter } from "next/navigation";
 
 const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedWebsite, setSelectedWebsite] = useState("");
@@ -187,6 +190,13 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
                 </option>
               ))}
             </select>
+            <div
+              className="ml-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer"
+              title="Add new website"
+              onClick={() => router.push("/website?add=true")}
+            >
+              <FaPlus className="text-secondary hover:text-primary" />
+            </div>
           </div>
 
           {/* Active/Disabled Toggle */}

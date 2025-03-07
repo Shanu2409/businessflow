@@ -7,6 +7,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
 import FullScreenLoader from "@/components/FullScreenLoader";
+import { useDebounce } from "use-debounce";
 import {
   FaChevronDown,
   FaChevronLeft,
@@ -15,6 +16,7 @@ import {
   FaEdit,
   FaTrash,
 } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 const PageContent = () => {
   const searchParams = useSearchParams();
@@ -23,12 +25,14 @@ const PageContent = () => {
   );
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [searchValue, setSearchValue] = useState(search); // Input field value
+  const [debouncedSearch] = useDebounce(searchValue, 500); // Add 500ms debounce
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const router = useRouter();
 
   const fetchBankList = async () => {
     setLoading(true);
@@ -61,16 +65,22 @@ const PageContent = () => {
     setLoading(false);
   }, [search, page]);
 
-  // Update useEffect to listen for search changes
+  // Update useEffect to listen for debounced search changes
+  useEffect(() => {
+    setSearch(debouncedSearch);
+  }, [debouncedSearch]);
+
+  // Fetch data on mount and when dependencies change
   useEffect(() => {
     fetchTransactions();
-  }, [search]); // ✅ Now fetches data when `search` changes
+    fetchBankList(); // Also fetch bank list on component mount
+  }, [fetchTransactions]);
 
-  // Ensure search value updates and triggers fetching
+  // Ensure search value updates but doesn't immediately trigger fetch
   const handleSearchChange = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchValue(value);
-    setSearch(value); // ✅ This will now trigger fetchTransactions()
+    // Removed the immediate setSearch call; now handled by the debounced effect
   };
 
   // Delete Transaction
@@ -84,12 +94,6 @@ const PageContent = () => {
         toast.error("Failed to delete transaction.");
       }
     }
-  };
-
-  // Edit Transaction
-  const handleEdit = (transaction) => {
-    setEditData(transaction);
-    setShowTransactionForm(true);
   };
 
   // Toggle Form Visibility
@@ -145,9 +149,6 @@ const PageContent = () => {
 
   // Compute Columns
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
-  const displayColumns = columns.filter(
-    (col) => col !== "check" && col !== "recheck"
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -328,7 +329,10 @@ const PageContent = () => {
                           }}
                         />
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
+                      <td
+                        className="px-4 py-2 border border-gray-600"
+                        title={row.username}
+                      >
                         {row.username}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
@@ -344,13 +348,14 @@ const PageContent = () => {
                         {row.transaction_type}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row.old_bank_balance}
+                        ₹ {Number(row.old_bank_balance).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row.amount}
+                        ₹ {Number(row.amount).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row.effective_balance}
+                        ₹{" "}
+                        {Number(row.effective_balance).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {new Intl.DateTimeFormat("en-IN", {
@@ -380,7 +385,15 @@ const PageContent = () => {
                 ) : (
                   <tr>
                     <td colSpan={12} className="text-center py-4">
-                      No transactions found.
+                      <div className="flex flex-col items-center">
+                        <h1 className="text-2xl font-semibold text-gray-700 mb-2">
+                          No transactions found
+                        </h1>
+                        <p className="text-gray-500">
+                          Try expanding your search criteria to find more
+                          results.
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 )}

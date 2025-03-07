@@ -61,6 +61,7 @@ export async function GET(request) {
     const query = {
       $or: [
         { username: { $regex: search, $options: "i" } },
+        { website_name: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
       ],
     };

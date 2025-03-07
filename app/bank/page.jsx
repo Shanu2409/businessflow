@@ -5,23 +5,45 @@ import AddBankForm from "@/components/AddBankForm";
 import Navbar from "@/components/Navbar";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation"; // Add useRouter
 import FullScreenLoader from "@/components/FullScreenLoader";
-import { FaChevronDown, FaChevronLeft, FaChevronRight, FaChevronUp, FaEdit, FaTrash } from "react-icons/fa";
+import { useDebounce } from "use-debounce";
+import {
+  FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
+  FaChevronUp,
+  FaEdit,
+  FaTrash,
+} from "react-icons/fa";
 
 const PageContent = () => {
+  const router = useRouter(); // Add router for navigation
   const searchParams = useSearchParams();
   const [showAddBankForm, setShowAddBankForm] = useState(
     searchParams.get("add") === "true"
   );
   const [search, setSearch] = useState("");
+  const [searchValue, setSearchValue] = useState(""); // For immediate input updates
+  const [debouncedSearch] = useDebounce(searchValue, 500); // 500ms debounce
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
-    const [isFilterOpen, setIsFilterOpen] = useState(true);
-  
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
+
+  // Update search state when debounced value changes
+  useEffect(() => {
+    setSearch(debouncedSearch);
+  }, [debouncedSearch]);
+
+  // Handle search input changes
+  const handleSearchChange = (e) => {
+    const value = e.target.value.toLowerCase();
+    setSearchValue(value);
+    // No immediate setSearch, will be handled by the debounced effect
+  };
 
   const itemsPerPage = 20;
 
@@ -81,11 +103,6 @@ const PageContent = () => {
         toast.error("Error updating status.");
       }
     }
-  };
-
-  const handleSearchChange = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearch(value);
   };
 
   // Compute total pages
@@ -158,30 +175,30 @@ const PageContent = () => {
             )}
 
             {/* Filter & Sorting Sidebar */}
-                    <div className="w-full mt-4">
-                      <div className="p-4 bg-white rounded-lg shadow-md">
-                        <button
-                          onClick={() => setIsFilterOpen(!isFilterOpen)}
-                          className="flex items-center w-full mb-4"
-                        >
-                          {isFilterOpen ? (
-                            <FaChevronUp className="mr-2" />
-                          ) : (
-                            <FaChevronDown className="mr-2" />
-                          )}
-                          <span className="text-lg font-semibold">Filter & Search</span>
-                        </button>
-                        {isFilterOpen && (
-                          <input
-                            type="text"
-                            placeholder="Search transactions..."
-                            value={search}
-                            onChange={handleSearchChange} // ✅ Dynamic search update
-                            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-                          />
-                        )}
-                      </div>
-                    </div>
+            <div className="w-full mt-4">
+              <div className="p-4 bg-white rounded-lg shadow-md">
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="flex items-center w-full mb-4"
+                >
+                  {isFilterOpen ? (
+                    <FaChevronUp className="mr-2" />
+                  ) : (
+                    <FaChevronDown className="mr-2" />
+                  )}
+                  <span className="text-lg font-semibold">Filter & Search</span>
+                </button>
+                {isFilterOpen && (
+                  <input
+                    type="text"
+                    placeholder="Search banks..."
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+              </div>
+            </div>
 
             {data.length > 0 ? (
               <table className="w-full border-collapse">
@@ -234,17 +251,29 @@ const PageContent = () => {
                           }}
                         />
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
+                      <td
+                        className="px-4 py-2 border border-gray-600 hover:underline cursor-pointer"
+                        onClick={() =>
+                          router.push(`/transaction?search=${row?.bank_name}`)
+                        }
+                        title={`Search transactions for ${row?.bank_name}`}
+                      >
                         {row?.bank_name}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
+                      <td
+                        className="px-4 py-2 border border-gray-600 hover:underline cursor-pointer"
+                        onClick={() =>
+                          router.push(`/transaction?search=${row?.ifsc_code}`)
+                        }
+                        title={`Search transactions for ${row?.ifsc_code}`}
+                      >
                         {row?.ifsc_code}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {row?.account_number?.toString()}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row?.current_balance?.toLocaleString("en-IN")}
+                        ₹ {row?.current_balance?.toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {row?.created_by}
@@ -277,9 +306,14 @@ const PageContent = () => {
                 </tbody>
               </table>
             ) : (
-              <h1 className="text-center mt-4">
-                No results... Try expanding the search
-              </h1>
+              <div className="flex flex-col items-center mt-4">
+                <h1 className="text-2xl font-semibold text-gray-700 mb-2">
+                  No results found
+                </h1>
+                <p className="text-gray-500">
+                  Try expanding your search criteria to find more results.
+                </p>
+              </div>
             )}
           </div>
         </div>

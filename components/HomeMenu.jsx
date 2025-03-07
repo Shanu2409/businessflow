@@ -71,45 +71,50 @@ const HomeMenu = () => {
 
   return (
     <div className="p-6 max-w-lg mx-auto animate-fade-in">
-      <h1 className="text-xl font-semibold text-gray-800 mb-4 text-center animate-slide-down">
+      <h1 className="text-3xl font-semibold text-gray-800 mb-6 text-center animate-slide-down">
         Site Administration
       </h1>
       {menuItems.map((item, index) => (
-        <div key={index} className="mb-4 rounded-lg shadow-lg animate-fade-in">
+        <div
+          key={index}
+          className="mb-4 rounded-lg shadow-md overflow-hidden animate-fade-in"
+        >
           {/* Header Section */}
           <div
-            className="bg-secondary text-white px-4 py-3 flex justify-between items-center rounded-t-lg cursor-pointer transition-all duration-300 ease-in-out"
+            className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center rounded-t-lg cursor-pointer hover:bg-blue-700 transition-colors duration-300"
             onClick={() => toggleCollapse(index)}
           >
-            <span className="font-semibold">{item.title}</span>
+            <span className="font-semibold text-lg">{item.title}</span>
             <button
-              className={`text-white text-lg transform transition-transform duration-300 ${
-                collapsed[index] ? "rotate-0" : "rotate-180"
+              className={`text-white text-lg focus:outline-none transition-transform duration-300 ${
+                collapsed[index] ? "rotate-90" : "rotate-0"
               }`}
             >
-              {collapsed[index] ? "+" : "−"}
+              &#8640;
             </button>
           </div>
 
           {/* Collapsible Content */}
           <div
-            className={`border border-gray-300 p-3 flex justify-between items-center rounded-b-lg bg-white transition-all duration-300 ease-in-out overflow-hidden ${
-              collapsed[index] ? "h-0 opacity-0" : "h-auto opacity-100"
+            className={`bg-white p-4 transition-all duration-300 ease-in-out ${
+              collapsed[index] ? "hidden" : ""
             }`}
           >
-            <a
-              href={item.link}
-              className="text-blue-600 hover:underline transition-colors"
-            >
-              {item.title.charAt(0) + item.title.slice(1).toLowerCase()}
-            </a>
-            <div className="flex space-x-3">
+            <div className="flex justify-between items-center">
               <a
-                href={`${item.link}?add=true`}
-                className="text-green-600 hover:underline text-sm transition-transform transform hover:scale-105 active:scale-95"
+                href={item.link}
+                className="text-blue-600 hover:underline text-lg transition-colors"
               >
-                + Add
+                {item.title.charAt(0) + item.title.slice(1).toLowerCase()}
               </a>
+              <div className="flex space-x-3">
+                <a
+                  href={`${item.link}?add=true`}
+                  className="text-green-600 hover:underline text-sm transition-colors"
+                >
+                  + Add
+                </a>
+              </div>
             </div>
           </div>
         </div>
