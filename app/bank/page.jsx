@@ -20,18 +20,28 @@ import {
 const PageContent = () => {
   const router = useRouter(); // Add router for navigation
   const searchParams = useSearchParams();
+  const [user, setUser] = useState(null);
   const [showAddBankForm, setShowAddBankForm] = useState(
     searchParams.get("add") === "true"
   );
   const [search, setSearch] = useState("");
   const [searchValue, setSearchValue] = useState(""); // For immediate input updates
-  const [debouncedSearch] = useDebounce(searchValue, 500); // 500ms debounce
+  const [debouncedSearch] = useDebounce(searchValue, 500); // Correct usage of useDebounce
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [selectAllCheck, setSelectAllCheck] = useState(false); // Add this line
+
+  // Get user from sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   // Update search state when debounced value changes
   useEffect(() => {
@@ -48,7 +58,6 @@ const PageContent = () => {
   const itemsPerPage = 20;
 
   const fetchBankData = async () => {
-    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/banks?search=${
@@ -60,7 +69,6 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching bank data:", error);
     }
-    setLoading(false);
   };
 
   const handleDelete = async (id) => {
@@ -105,6 +113,31 @@ const PageContent = () => {
     }
   };
 
+  // Add this function after other handler functions
+  const handleCheckAll = async (checked) => {
+    setSelectAllCheck(checked);
+    setLoading(true);
+
+    try {
+      // Get all bank names in current view
+      const bankNames = currentRows.map((row) => row.bank_name);
+
+      // Send bulk update request with all bank names in body
+      await axios.post("/api/banks/all", {
+        list: bankNames,
+        value: checked,
+      });
+
+      toast.success(checked ? "All banks checked" : "All banks unchecked");
+      fetchBankData();
+    } catch (error) {
+      toast.error("Failed to update check status for all banks");
+      console.error("Error updating check status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Compute total pages
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
   const currentRows = data.slice(
@@ -118,24 +151,26 @@ const PageContent = () => {
       <div className="min-h-screen bg-gray-100">
         <Navbar />
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Header & Toggle Form Button */}
+          {/* Header & Toggle Form Button - Only show Add Bank button for admin */}
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               Bank Details
             </h1>
-            <button
-              className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
-              onClick={() => {
-                setShowAddBankForm(!showAddBankForm);
-                setEditData(null);
-              }}
-            >
-              {showAddBankForm ? "Cancel" : "Add Bank"}
-            </button>
+            {user?.type === "admin" && (
+              <button
+                className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
+                onClick={() => {
+                  setShowAddBankForm(!showAddBankForm);
+                  setEditData(null);
+                }}
+              >
+                {showAddBankForm ? "Cancel" : "Add Bank"}
+              </button>
+            )}
           </div>
 
-          {/* Add Bank Form */}
-          {showAddBankForm && (
+          {/* Add Bank Form - Only show if user is admin and form is toggled */}
+          {showAddBankForm && user?.type === "admin" && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <AddBankForm
                 editData={editData}
@@ -204,9 +239,20 @@ const PageContent = () => {
               <table className="w-full border-collapse">
                 <thead className="text-left text-white bg-secondary">
                   <tr>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      Check
-                    </th>
+                    {user?.type === "admin" && (
+                      <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                        Check
+                        <div className="mt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectAllCheck}
+                            onChange={(e) => handleCheckAll(e.target.checked)}
+                            className="mr-1"
+                          />
+                          <span className="text-xs">All</span>
+                        </div>
+                      </th>
+                    )}
                     <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                       Bank Name
                     </th>
@@ -226,9 +272,11 @@ const PageContent = () => {
                       Created At
                     </th>
 
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      ACTIONS
-                    </th>
+                    {user?.type === "admin" && (
+                      <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                        ACTIONS
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -239,18 +287,20 @@ const PageContent = () => {
                         row.check ? "bg-yellow-100" : ""
                       }`}
                     >
-                      <td className="px-4 py-2 border border-gray-600 text-center">
-                        <input
-                          type="checkbox"
-                          checked={row.check}
-                          onChange={async (e) => {
-                            await handleStatusChange(
-                              row.bank_name,
-                              e.target.checked
-                            );
-                          }}
-                        />
-                      </td>
+                      {user?.type === "admin" && (
+                        <td className="px-4 py-2 border border-gray-600 text-center">
+                          <input
+                            type="checkbox"
+                            checked={row.check}
+                            onChange={async (e) => {
+                              await handleStatusChange(
+                                row.bank_name,
+                                e.target.checked
+                              );
+                            }}
+                          />
+                        </td>
+                      )}
                       <td
                         className="px-4 py-2 border border-gray-600 hover:underline cursor-pointer"
                         onClick={() =>
@@ -287,20 +337,22 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row?.createdAt))}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        <button
-                          onClick={() => handleIsEdit(row)}
-                          className="text-blue-500 mr-2"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(row.bank_name)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
+                      {user?.type === "admin" && (
+                        <td className="px-4 py-2 border border-gray-600">
+                          <button
+                            onClick={() => handleIsEdit(row)}
+                            className="text-blue-500 mr-2"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(row.bank_name)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
