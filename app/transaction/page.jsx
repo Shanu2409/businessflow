@@ -32,10 +32,20 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [user, setUser] = useState(null);
+  const [selectAllCheck, setSelectAllCheck] = useState(false);
+  const [selectAllReCheck, setSelectAllReCheck] = useState(false);
   const router = useRouter();
 
+  // Get user from sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
+
   const fetchBankList = async () => {
-    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/banks?onlyNames=true`
@@ -46,8 +56,6 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
-
-    setLoading(false);
   };
 
   // Fetch Transactions (Optimized with useCallback)
@@ -121,21 +129,79 @@ const PageContent = () => {
   };
 
   const handleStatusChange = async (id, key, value) => {
-    if (confirm("Are you sure you want to change this status?")) {
-      try {
-        const response = await axios.put(
-          `/api/transactions?field=${key}&value=${value}&tid=${id}`
-        );
+    try {
+      const response = await axios.put(
+        `/api/transactions?field=${key}&value=${value}&tid=${id}`
+      );
 
-        if (response.status === 200) {
-          toast.success("Status updated successfully");
-          fetchTransactions(); // Refresh data after update
-        } else {
-          toast.error("Failed to update status.");
-        }
-      } catch (error) {
-        toast.error("Error updating status.");
+      if (response.status === 200) {
+        toast.success("Status updated successfully");
+        fetchTransactions(); // Refresh data after update
+      } else {
+        toast.error("Failed to update status.");
       }
+    } catch (error) {
+      toast.error("Error updating status.");
+    }
+  };
+
+  // Handle check all functionality
+  const handleCheckAll = async (checked) => {
+    setSelectAllCheck(checked);
+    setLoading(true);
+
+    try {
+      // Get all transaction IDs in current view
+      const transactionIds = currentRows.map((row) => row._id);
+
+      // Send bulk update request with all IDs in body
+      await axios.post("/api/transactions/all", {
+        list: transactionIds,
+        label: "check",
+        value: checked,
+      });
+
+      toast.success(checked ? "All items checked" : "All items unchecked");
+      fetchTransactions();
+    } catch (error) {
+      toast.error("Failed to update check status for all items");
+      console.error("Error updating check status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle re-check all functionality (only for items that are checked)
+  const handleReCheckAll = async (checked) => {
+    setLoading(true);
+
+    try {
+      // Get transaction IDs only for items that have check set to true
+      const transactionIds = currentRows
+        .filter((row) => row.check === true)
+        .map((row) => row._id);
+
+      // Only make API call if there are IDs to update
+      if (transactionIds.length > 0) {
+        // Send bulk update request with all IDs in body
+        await axios.post("/api/transactions/all", {
+          list: transactionIds,
+          label: "re_check",
+          value: checked,
+        });
+
+        setSelectAllReCheck(checked);
+        toast.success(checked ? "All items re-checked" : "All items unchecked");
+      } else {
+        toast.info("No eligible items to update");
+      }
+
+      fetchTransactions();
+    } catch (error) {
+      toast.error("Failed to update re-check status");
+      console.error("Error updating re-check status:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -249,9 +315,27 @@ const PageContent = () => {
                 <tr>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Check
+                    <div className="mt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectAllCheck}
+                        onChange={(e) => handleCheckAll(e.target.checked)}
+                        className="mr-1"
+                      />
+                      <span className="text-xs">All</span>
+                    </div>
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Re Check
+                    <div className="mt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectAllReCheck}
+                        onChange={(e) => handleReCheckAll(e.target.checked)}
+                        className="mr-1"
+                      />
+                      <span className="text-xs">All</span>
+                    </div>
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     User
@@ -280,9 +364,11 @@ const PageContent = () => {
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Created On
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                    ACTIONS
-                  </th>
+                  {user?.type === "admin" && (
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      ACTIONS
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -366,20 +452,22 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row.createdAt))}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600 text-center">
-                        {/* <button
+                      {user?.type === "admin" && (
+                        <td className="px-4 py-2 border border-gray-600 text-center">
+                          {/* <button
                           onClick={() => handleEdit(row)}
                           className="text-blue-500 mr-2"
                         >
                           <FaEdit />
                         </button> */}
-                        <button
-                          onClick={() => handleDelete(row._id)}
-                          className="text-red-500"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
+                          <button
+                            onClick={() => handleDelete(row._id)}
+                            className="text-red-500"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

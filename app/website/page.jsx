@@ -45,7 +45,6 @@ const PageContent = () => {
   };
 
   const fetchWebsiteData = async () => {
-    setLoading(true);
     const searchQuery = searchParams.get("search") || "";
 
     try {
@@ -57,8 +56,6 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-
-    setLoading(false);
   };
 
   const handleDelete = async (id) => {

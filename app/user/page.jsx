@@ -74,7 +74,6 @@ const PageContent = () => {
   };
 
   const fetchWebsiteList = async () => {
-    setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/websites?onlyNames=true`
@@ -85,7 +84,6 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-    setLoading(false);
   };
 
   const handleIsEdit = (data) => {
