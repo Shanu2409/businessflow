@@ -39,6 +39,7 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
+    const sort = searchParams.get("sort") || "createdAt";
     const onlyNames = searchParams.get("onlyNames");
 
     await connection();
@@ -61,7 +62,7 @@ export async function GET(request) {
 
     // Get paginated bank data
     const banks = await Bank.find(query, { __v: 0, _id: 0 })
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(limit)
       .skip((page - 1) * limit);
 

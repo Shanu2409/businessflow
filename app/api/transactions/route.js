@@ -97,6 +97,7 @@ export async function GET(request) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
+    const sort = searchParams.get("sort") || "createdAt";
     const page = parseInt(searchParams.get("page") || 1);
 
     await connection();
@@ -118,7 +119,7 @@ export async function GET(request) {
       old_website_balance: 0,
       new_website_balance: 0,
     })
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(limit)
       .skip((page - 1) * limit);
 

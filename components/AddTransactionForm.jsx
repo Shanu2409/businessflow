@@ -147,7 +147,7 @@ const AddTransactionForm = ({
     setSelectedBank("");
     setTransactionType("Deposit");
     setAmount("");
-    setShowTransactionForm(false);
+    // setShowTransactionForm(false);
   };
 
   return (
@@ -202,7 +202,7 @@ const AddTransactionForm = ({
             {/* Amount Input */}
             <InputField
               icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
-              type="number"
+              type="text"
               placeholder="Enter Amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -369,7 +369,14 @@ const DropdownMenu = ({
 };
 
 // Input Field Component
-const InputField = ({ icon, type, placeholder, value, onChange }) => (
+const InputField = ({
+  icon,
+  type,
+  placeholder,
+  value,
+  onChange,
+  onKeyDown,
+}) => (
   <div className="mb-6 flex items-center border-b border-gray-300 py-2">
     {icon}
     <input
@@ -378,6 +385,8 @@ const InputField = ({ icon, type, placeholder, value, onChange }) => (
       placeholder={placeholder}
       value={value}
       onChange={onChange}
+      onKeyDown={onKeyDown} // Add the onKeyDown prop here
+      style={{ appearance: "textfield" }} // Add this line to remove arrows
     />
   </div>
 );
