@@ -32,6 +32,7 @@ const PageContent = () => {
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sortLabel, setSortLabel] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [selectAllCheck, setSelectAllCheck] = useState(false);
 
@@ -55,7 +56,7 @@ const PageContent = () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -64,7 +65,7 @@ const PageContent = () => {
       toast.error("Failed to fetch bank data.");
     }
     setLoading(false);
-  }, [search, page]); // ✅ Depend on `page` and `search`
+  }, [search, page, sortLabel]); // ✅ Depend on `page` and `search`
 
   // Fetch data when dependencies change
   useEffect(() => {
@@ -138,7 +139,9 @@ const PageContent = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             {data.length > 0 && (
               <div className="flex justify-between items-center mb-4">
-                <span>Total: {totalData} | Page {page} of {computedTotalPages}</span>
+                <span>
+                  Total: {totalData} | Page {page} of {computedTotalPages}
+                </span>
                 <div className="flex space-x-4">
                   <button
                     onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -164,11 +167,46 @@ const PageContent = () => {
               <table className="w-full border-collapse">
                 <thead className="text-left text-white bg-secondary">
                   <tr>
-                    <th className="px-4 py-2 border border-gray-600">Bank Name</th>
-                    <th className="px-4 py-2 border border-gray-600">IFSC Code</th>
-                    <th className="px-4 py-2 border border-gray-600">Account Number</th>
-                    <th className="px-4 py-2 border border-gray-600">Current Balance</th>
-                    {user?.type === "admin" && <th className="px-4 py-2 border border-gray-600">Actions</th>}
+                    <th
+                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                      onClick={() =>
+                        setSortLabel((prev) =>
+                          prev === "bank_name" ? "-bank_name" : "bank_name"
+                        )
+                      }
+                    >
+                      Bank Name
+                    </th>
+                    <th
+                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                      onClick={() =>
+                        setSortLabel((prev) =>
+                          prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
+                        )
+                      }
+                    >
+                      IFSC Code
+                    </th>
+                    <th
+                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                      onClick={() =>
+                        setSortLabel((prev) =>
+                          prev === "account_number"
+                            ? "-account_number"
+                            : "account_number"
+                        )
+                      }
+                    >
+                      Account Number
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600">
+                      Current Balance
+                    </th>
+                    {user?.type === "admin" && (
+                      <th className="px-4 py-2 border border-gray-600">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -177,10 +215,15 @@ const PageContent = () => {
                       <td className="border px-4 py-2">{row.bank_name}</td>
                       <td className="border px-4 py-2">{row.ifsc_code}</td>
                       <td className="border px-4 py-2">{row.account_number}</td>
-                      <td className="border px-4 py-2">₹ {row.current_balance}</td>
+                      <td className="border px-4 py-2">
+                        ₹ {row.current_balance}
+                      </td>
                       {user?.type === "admin" && (
                         <td className="border px-4 py-2">
-                          <button onClick={() => handleDelete(row._id)} className="text-red-500">
+                          <button
+                            onClick={() => handleDelete(row._id)}
+                            className="text-red-500"
+                          >
                             <FaTrash />
                           </button>
                         </td>
@@ -189,7 +232,9 @@ const PageContent = () => {
                   ))}
                 </tbody>
               </table>
-            ) : <p>No results found.</p>}
+            ) : (
+              <p>No results found.</p>
+            )}
           </div>
         </div>
       </div>

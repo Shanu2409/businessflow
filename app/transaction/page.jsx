@@ -35,6 +35,7 @@ const PageContent = () => {
   const [user, setUser] = useState(null);
   const [selectAllCheck, setSelectAllCheck] = useState(false);
   const [selectAllReCheck, setSelectAllReCheck] = useState(false);
+  const [sortLabel, setSortLabel] = useState("");
   const router = useRouter();
 
   // Get user from sessionStorage
@@ -63,7 +64,7 @@ const PageContent = () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/transactions?search=${search}&page=${page}&limit=20`
+        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -71,7 +72,7 @@ const PageContent = () => {
       toast.error("Failed to load transactions.");
     }
     setLoading(false);
-  }, [search, page]);
+  }, [search, page, sortLabel]);
 
   // Update useEffect to listen for debounced search changes
   useEffect(() => {
@@ -210,8 +211,6 @@ const PageContent = () => {
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
   const currentRows = data; // Since API already returns paginated data
 
-  
-
   // Compute Columns
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
 
@@ -336,25 +335,71 @@ const PageContent = () => {
                       <span className="text-xs">All</span>
                     </div>
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "username" ? "-username" : "username"
+                      )
+                    }
+                  >
                     User
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "website_name"
+                          ? "-website_name"
+                          : "website_name"
+                      )
+                    }
+                  >
                     Website
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "bank_name" ? "-bank_name" : "bank_name"
+                      )
+                    }
+                  >
                     Bank
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "created_by" ? "-created_by" : "created_by"
+                      )
+                    }
+                  >
                     Created By
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "transaction_type"
+                          ? "-transaction_type"
+                          : "transaction_type"
+                      )
+                    }
+                  >
                     Type
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Current Balance
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "amount" ? "-amount" : "amount"
+                      )
+                    }
+                  >
                     Amount
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
