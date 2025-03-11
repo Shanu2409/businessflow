@@ -208,10 +208,9 @@ const PageContent = () => {
   // Compute Pagination
   const itemsPerPage = 20;
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
-  const currentRows = data.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  const currentRows = data; // Since API already returns paginated data
+
+  
 
   // Compute Columns
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
