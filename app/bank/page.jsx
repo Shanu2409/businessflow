@@ -100,7 +100,7 @@ const PageContent = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               Bank Details
             </h1>
-            {user?.type === "admin" && (
+            {
               <button
                 className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
                 onClick={() => {
@@ -110,11 +110,11 @@ const PageContent = () => {
               >
                 {showAddBankForm ? "Cancel" : "Add Bank"}
               </button>
-            )}
+            }
           </div>
 
           {/* Add Bank Form */}
-          {showAddBankForm && user?.type === "admin" && (
+          {showAddBankForm && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <AddBankForm
                 editData={editData}
