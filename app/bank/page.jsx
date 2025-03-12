@@ -210,27 +210,37 @@ const PageContent = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((row) => (
-                    <tr key={row._id}>
-                      <td className="border px-4 py-2">{row.bank_name}</td>
-                      <td className="border px-4 py-2">{row.ifsc_code}</td>
-                      <td className="border px-4 py-2">{row.account_number}</td>
-                      <td className="border px-4 py-2">
-                        ₹ {row.current_balance}
-                      </td>
-                      {user?.type === "admin" && (
-                        <td className="border px-4 py-2">
-                          <button
-                            onClick={() => handleDelete(row._id)}
-                            className="text-red-500"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
+                 {data.map((row) => (
+    <tr key={row._id}>
+      <td
+        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+        onClick={() => router.push(`/transaction?search=${row.bank_name}`)}
+      >
+        {row.bank_name}
+      </td>
+      <td
+        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+        onClick={() => router.push(`/transaction?search=${row.ifsc_code}`)}
+      >
+        {row.ifsc_code}
+      </td>
+      <td
+        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+        onClick={() => router.push(`/transaction?search=${row.account_number}`)}
+      >
+        {row.account_number}
+      </td>
+      <td className="border px-4 py-2">₹ {row.current_balance}</td>
+      {user?.type === "admin" && (
+        <td className="border px-4 py-2">
+          <button onClick={() => handleDelete(row._id)} className="text-red-500">
+            <FaTrash />
+          </button>
+        </td>
+      )}
+    </tr>
+  ))}
+</tbody>
               </table>
             ) : (
               <p>No results found.</p>
