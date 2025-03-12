@@ -97,7 +97,7 @@ export async function GET(request) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
-    const sort = searchParams.get("sort") || "createdAt";
+    const sort = searchParams.get("sort") || "-createdAt";
     const page = parseInt(searchParams.get("page") || 1);
 
     await connection();
