@@ -242,7 +242,7 @@ const DropdownMenu = ({
 
   // Filter options based on search input
   const filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
+    option.toLowerCase().startsWith(searchTerm.toLowerCase())
   );
 
   // Reset highlighted index when filtered options change

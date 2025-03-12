@@ -215,7 +215,7 @@ const PageContent = () => {
                         {row.url}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.current_balance).toLocaleString("en-IN")}
+                        {Number(row.current_balance).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {row.created_by}
