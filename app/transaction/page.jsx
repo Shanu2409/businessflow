@@ -396,7 +396,7 @@ const PageContent = () => {
                     className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
                     onClick={() =>
                       setSortLabel((prev) =>
-                        prev === "amount" ? "-amount" : "amount"
+                        prev === "createdAt" ? "-createdAt" : "createdAt"
                       )
                     }
                   >
@@ -405,7 +405,14 @@ const PageContent = () => {
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Effective Balance
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "amount" ? "-amount" : "amount"
+                      )
+                    }
+                  >
                     Created On
                   </th>
                   {user?.type === "admin" && (
