@@ -124,7 +124,7 @@ const PageContent = () => {
       }).format(new Date(entry));
     }
     if (key === "current_balance" && typeof entry === "number") {
-      return `₹ ${entry.toLocaleString("en-IN")}`;
+      return `${entry.toLocaleString("en-IN")}`;
     }
     return entry;
   };
@@ -312,6 +312,9 @@ const PageContent = () => {
               <thead className="text-left text-white bg-primary">
                 <tr>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                    Sr. No.
+                  </th>
+                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Check
                     <div className="mt-1">
                       <input
@@ -405,7 +408,7 @@ const PageContent = () => {
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Effective Balance
                   </th>
-                <th
+                  <th
                     className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
                     onClick={() =>
                       setSortLabel((prev) =>
@@ -415,11 +418,11 @@ const PageContent = () => {
                   >
                     Created On
                   </th>
-                  {user?.type === "admin" && (
+                  {/* {user?.type === "admin" && (
                     <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                       ACTIONS
                     </th>
-                  )}
+                  )} */}
                 </tr>
               </thead>
               <tbody>
@@ -439,6 +442,10 @@ const PageContent = () => {
                           : "text-red-800 bg-red-100"
                       }`}
                     >
+                      <td className="px-4 py-2 border border-gray-600 text-center">
+                        {rowIndex + 1 + (page - 1) * itemsPerPage}
+                      </td>
+
                       <td className="px-4 py-2 border border-gray-600 text-center">
                         <input
                           type="checkbox"
@@ -485,10 +492,10 @@ const PageContent = () => {
                         {row.transaction_type}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.old_bank_balance).toLocaleString("en-IN")}
+                        {Number(row.old_bank_balance).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.amount).toLocaleString("en-IN")}
+                        {Number(row.amount).toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         ₹{" "}
@@ -503,14 +510,14 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row.createdAt))}
                       </td>
-                      {user?.type === "admin" && (
+                      {/* {user?.type === "admin" && (
                         <td className="px-4 py-2 border border-gray-600 text-center">
-                          {/* <button
+                          <button
                           onClick={() => handleEdit(row)}
                           className="text-blue-500 mr-2"
                         >
                           <FaEdit />
-                        </button> */}
+                        </button>
                           <button
                             onClick={() => handleDelete(row._id)}
                             className="text-red-500"
@@ -518,7 +525,7 @@ const PageContent = () => {
                             <FaTrash />
                           </button>
                         </td>
-                      )}
+                      )} */}
                     </tr>
                   ))
                 ) : (

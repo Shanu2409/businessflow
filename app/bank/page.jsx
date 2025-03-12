@@ -76,6 +76,11 @@ const PageContent = () => {
     setSearchValue(e.target.value.toLowerCase());
   };
 
+  const handleIsEdit = (data) => {
+    setEditData(data);
+    setShowAddBankForm(true);
+  };
+
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this bank account?")) {
       try {
@@ -164,84 +169,105 @@ const PageContent = () => {
             )}
 
             {data.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead className="text-left text-white bg-secondary">
-                  <tr>
-                    <th
-                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
-                      onClick={() =>
-                        setSortLabel((prev) =>
-                          prev === "bank_name" ? "-bank_name" : "bank_name"
-                        )
-                      }
-                    >
-                      Bank Name
-                    </th>
-                    <th
-                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
-                      onClick={() =>
-                        setSortLabel((prev) =>
-                          prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
-                        )
-                      }
-                    >
-                      IFSC Code
-                    </th>
-                    <th
-                      className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
-                      onClick={() =>
-                        setSortLabel((prev) =>
-                          prev === "account_number"
-                            ? "-account_number"
-                            : "account_number"
-                        )
-                      }
-                    >
-                      Account Number
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600">
-                      Current Balance
-                    </th>
-                    {user?.type === "admin" && (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="text-left text-white bg-secondary">
+                    <tr>
                       <th className="px-4 py-2 border border-gray-600">
-                        Actions
+                        Sr. No.
                       </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                 {data.map((row) => (
-    <tr key={row._id}>
-      <td
-        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
-        onClick={() => router.push(`/transaction?search=${row.bank_name}`)}
-      >
-        {row.bank_name}
-      </td>
-      <td
-        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
-        onClick={() => router.push(`/transaction?search=${row.ifsc_code}`)}
-      >
-        {row.ifsc_code}
-      </td>
-      <td
-        className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
-        onClick={() => router.push(`/transaction?search=${row.account_number}`)}
-      >
-        {row.account_number}
-      </td>
-      <td className="border px-4 py-2">₹ {row.current_balance}</td>
-      {user?.type === "admin" && (
-        <td className="border px-4 py-2">
-          <button onClick={() => handleDelete(row._id)} className="text-red-500">
-            <FaTrash />
-          </button>
-        </td>
-      )}
-    </tr>
-  ))}
-</tbody>
-              </table>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "bank_name" ? "-bank_name" : "bank_name"
+                          )
+                        }
+                      >
+                        Bank Name
+                      </th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
+                          )
+                        }
+                      >
+                        IFSC Code
+                      </th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "account_number"
+                              ? "-account_number"
+                              : "account_number"
+                          )
+                        }
+                      >
+                        Account Number
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Current Balance
+                      </th>
+                      {user?.type === "admin" && (
+                        <th className="px-4 py-2 border border-gray-600">
+                          Actions
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((row, index) => (
+                      <tr key={row._id}>
+                        <td className="border px-4 py-2">
+                          {index + 1 + (page - 1) * itemsPerPage}
+                        </td>
+                        <td
+                          className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.bank_name}`)
+                          }
+                        >
+                          {row.bank_name}
+                        </td>
+                        <td
+                          className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.ifsc_code}`)
+                          }
+                        >
+                          {row.ifsc_code}
+                        </td>
+                        <td
+                          className="border px-4 py-2 text-blue-500 cursor-pointer hover:underline"
+                          onClick={() =>
+                            router.push(
+                              `/transaction?search=${row.account_number}`
+                            )
+                          }
+                        >
+                          {row.account_number}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {row.current_balance}
+                        </td>
+                        {user?.type === "admin" && (
+                          <td className="border px-4 py-2">
+                            <button
+                              onClick={() => handleIsEdit(row)}
+                              className="text-blue-500"
+                            >
+                              <FaEdit />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p>No results found.</p>
             )}

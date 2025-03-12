@@ -23,6 +23,8 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     check: false,
   });
 
+  const [initialBankName, setInitialBankName] = useState("");
+
   // Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,6 +40,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         ifsc_code: editData.ifsc_code || "",
         current_balance: editData.current_balance || "",
       });
+      setInitialBankName(editData.bank_name || "");
     }
   }, [editData]);
 
@@ -70,7 +73,18 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
 
     try {
       if (editData) {
-        await axios.put(`/api/banks/${formData.bank_name}`, formData);
+        const bankNameChanged = initialBankName !== formData.bank_name;
+        const updateData = { ...formData };
+
+        let apiUrl = `/api/banks/${initialBankName}`;
+
+        if (bankNameChanged) {
+          updateData.bank_name = formData.bank_name;
+        } else {
+          updateData.bank_name = initialBankName;
+        }
+
+        await axios.put(apiUrl, updateData);
         toast.success("Bank details updated successfully");
       } else {
         let user;
@@ -84,13 +98,13 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         toast.success("Bank added successfully");
       }
 
-      setLoading(false);
-
       fetchData();
       resetForm();
     } catch (error) {
       console.error("Error processing bank:", error);
       toast.error("Failed to process bank details");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,7 +124,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
               icon: <FaUniversity />,
               name: "bank_name",
               placeholder: "Bank Name",
-              disabled: editData,
             },
             {
               icon: <FaRegCreditCard />,
@@ -124,7 +137,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
               placeholder: "Current Balance",
               type: "number",
               step: "0.01",
-              disabled: editData,
             },
           ].map(
             (

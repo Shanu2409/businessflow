@@ -75,7 +75,7 @@ export const Table = ({
       }).format(new Date(entry));
     }
     if (key === "current_balance" && typeof entry === "number") {
-      return `₹ ${entry.toLocaleString("en-IN")}`;
+      return `${entry.toLocaleString("en-IN")}`;
     }
     return entry;
   };
