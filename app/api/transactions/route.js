@@ -29,6 +29,7 @@ export async function POST(request) {
 
     // Ensure fetched balances are numbers
     const bankBalance = bank ? Number(bank.current_balance) : 0;
+    const websiteBalance = website ? Number(website.current_balance) : 0;
 
     // Perform transaction updates
     if (transaction_type === "Deposit") {
@@ -69,6 +70,11 @@ export async function POST(request) {
         ? bankBalance + numericAmount
         : bankBalance - numericAmount;
 
+    const newWebsiteBalance =
+      transaction_type === "Deposit"
+        ? websiteBalance - numericAmount
+        : websiteBalance + numericAmount;
+
     // Save transaction with calculated balances
     const newTransaction = new Transaction({
       bank_name,
@@ -77,6 +83,8 @@ export async function POST(request) {
       transaction_type,
       old_bank_balance: bankBalance,
       effective_balance: newBankBalance, // Use calculated value
+      old_website_balance: websiteBalance,
+      new_website_balance: newWebsiteBalance, // Use calculated value
       amount: numericAmount,
       created_by,
     });
@@ -116,8 +124,6 @@ export async function GET(request) {
     // Get paginated bank data
     const banks = await Transaction.find(query, {
       __v: 0,
-      old_website_balance: 0,
-      new_website_balance: 0,
     })
       .sort(sort)
       .limit(limit)
