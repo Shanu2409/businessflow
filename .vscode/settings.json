@@ -1,5 +1,10 @@
 {
     "cSpell.words": [
         "ifsc"
+    ],
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+      {
+        "text": "Be exteremely detailed with the changes and give in pointers. and add lots of emojis!",
+      }
     ]
 }

@@ -155,69 +155,75 @@ const AddTransactionForm = ({
       {loading ? (
         <FullScreenLoader isLoading={loading} />
       ) : (
-        <div className="max-w-md mx-auto p-4">
-          <h2 className="text-2xl font-bold text-center mb-6">
-            {editData ? "Edit Transaction" : "Add Transaction"}
-          </h2>
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-          >
-            {/* Username Dropdown */}
-            <DropdownMenu
-              label="Select a User"
-              options={Object.keys(userList)}
-              value={selectedUser}
-              onChange={setSelectedUser}
-              addRoute="/user?add=true"
-            />
+        <div className="mx-auto p-4 flex justify-center">
+          {" "}
+          {/* Center the form horizontally */}
+          <div className="w-full md:max-w-md">
+            {" "}
+            {/* Add a container for the form with max width */}
+            <h2 className="text-2xl font-bold text-center mb-4">
+              {editData ? "Edit Transaction" : "Add Transaction"}
+            </h2>
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white shadow-md rounded px-4 pt-4 pb-4 mb-2"
+            >
+              {/* Username Dropdown */}
+              <DropdownMenu
+                label="Select a User"
+                options={Object.keys(userList)}
+                value={selectedUser}
+                onChange={setSelectedUser}
+                addRoute="/user?add=true"
+              />
 
-            {/* Website Dropdown (Auto-selected based on user) */}
-            <DropdownMenu
-              label="Select a Website"
-              options={websites}
-              isDisabled={true}
-              value={selectedWebsite}
-              onChange={setSelectedWebsite}
-              addRoute="/website?add=true"
-            />
+              {/* Website Dropdown (Auto-selected based on user) */}
+              <DropdownMenu
+                label="Select a Website"
+                options={websites}
+                isDisabled={true}
+                value={selectedWebsite}
+                onChange={setSelectedWebsite}
+                addRoute="/website?add=true"
+              />
 
-            {/* Bank Dropdown */}
-            <DropdownMenu
-              label="Select a Bank"
-              options={bankList}
-              value={selectedBank}
-              onChange={setSelectedBank}
-              addRoute="/bank?add=true"
-            />
+              {/* Bank Dropdown */}
+              <DropdownMenu
+                label="Select a Bank"
+                options={bankList}
+                value={selectedBank}
+                onChange={setSelectedBank}
+                addRoute="/bank?add=true"
+              />
 
-            {/* Transaction Type */}
-            <DropdownMenu
-              label="Select Transaction Type"
-              options={["Deposit", "Withdraw"]}
-              value={transactionType}
-              onChange={setTransactionType}
-            />
+              {/* Transaction Type */}
+              <DropdownMenu
+                label="Select Transaction Type"
+                options={["Deposit", "Withdraw"]}
+                value={transactionType}
+                onChange={setTransactionType}
+              />
 
-            {/* Amount Input */}
-            <InputField
-              icon={<FaMoneyBillWave className="text-gray-600 mr-3" />}
-              type="text"
-              placeholder="Enter Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+              {/* Amount Input */}
+              <InputField
+                icon={<FaMoneyBillWave className="text-gray-600 mr-2" />}
+                type="text"
+                placeholder="Enter Amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
 
-            {/* Submit Button */}
-            <div className="flex items-center justify-center">
-              <button
-                className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-                type="submit"
-              >
-                {editData ? "Update" : "Add"}
-              </button>
-            </div>
-          </form>
+              {/* Submit Button */}
+              <div className="flex items-center justify-center mt-2">
+                <button
+                  className="bg-secondary hover:bg-primary text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm"
+                  type="submit"
+                >
+                  {editData ? "Update" : "Add"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </>
@@ -308,11 +314,13 @@ const DropdownMenu = ({
   };
 
   return (
-    <div className="relative mb-4" ref={dropdownRef}>
-      <label className="block text-gray-700 font-bold mb-1">{label}</label>
+    <div className="relative mb-3" ref={dropdownRef}>
+      <label className="block text-gray-700 font-bold mb-1 text-sm">
+        {label}
+      </label>
       <div className="flex items-center">
         <div
-          className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white flex-grow`}
+          className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white flex-grow text-sm`}
           onClick={() => {
             if (!isDisabled) {
               setIsOpen(!isOpen);
@@ -332,24 +340,23 @@ const DropdownMenu = ({
           </div>
         )}
       </div>
-
       {isOpen && (
         <div className="absolute w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg z-10">
           <input
             ref={searchInputRef}
             type="text"
             placeholder="Search..."
-            className="w-full p-2 border-b border-gray-300 focus:outline-none"
+            className="w-full p-2 border-b border-gray-300 focus:outline-none text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <div className="max-h-40 overflow-y-auto">
+          <div className="max-h-32 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={option}
-                  className={`p-2 cursor-pointer ${
+                  className={`p-1 cursor-pointer text-sm ${
                     index === highlightedIndex ? "bg-gray-200" : ""
                   }`}
                   onClick={() => selectOption(option)}
@@ -377,10 +384,10 @@ const InputField = ({
   onChange,
   onKeyDown,
 }) => (
-  <div className="mb-6 flex items-center border-b border-gray-300 py-2">
+  <div className="mb-3 flex items-center border-b border-gray-300 py-1">
     {icon}
     <input
-      className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
+      className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none text-sm"
       type={type}
       placeholder={placeholder}
       value={value}

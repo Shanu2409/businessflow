@@ -36,6 +36,7 @@ const PageContent = () => {
   const [selectAllCheck, setSelectAllCheck] = useState(false);
   const [selectAllReCheck, setSelectAllReCheck] = useState(false);
   const [sortLabel, setSortLabel] = useState("");
+  const [isBankEnabled, setIsBankEnabled] = useState(true);
   const router = useRouter();
 
   // Get user from sessionStorage
@@ -253,8 +254,9 @@ const PageContent = () => {
         </div>
 
         {/* Filter & Sorting Sidebar */}
-        <div className="w-full mt-4">
-          <div className="p-4 bg-white rounded-lg shadow-md">
+        <div className="flex flex-col md:flex-row w-full mt-4 space-y-4 md:space-y-0 md:space-x-4">
+          {/* Filter & Search Section */}
+          <div className="md:w-3/4 w-full p-4 bg-white rounded-lg shadow-md">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="flex items-center w-full mb-4"
@@ -266,15 +268,61 @@ const PageContent = () => {
               )}
               <span className="text-lg font-semibold">Filter & Search</span>
             </button>
+
             {isFilterOpen && (
               <input
                 type="text"
                 placeholder="Search transactions..."
                 value={searchValue}
-                onChange={handleSearchChange} // ✅ Dynamic search update
+                onChange={handleSearchChange}
                 className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
               />
             )}
+          </div>
+
+          {/* Bank & Website Toggle Switch */}
+          <div className="md:w-1/4 w-full bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-center md:text-left">
+              Select Mode
+            </h2>
+            <div className="flex justify-center md:justify-start items-center space-x-4">
+              {/* Label for Website (OFF State) */}
+              <span
+                className={`font-semibold ${
+                  !isBankEnabled ? "text-blue-600" : "text-gray-500"
+                }`}
+              >
+                Website
+              </span>
+
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isBankEnabled}
+                  onChange={() => {
+                    setIsBankEnabled((prev) => !prev);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-all relative">
+                  <div
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
+                      isBankEnabled ? "translate-x-7" : ""
+                    }`}
+                  ></div>
+                </div>
+              </label>
+
+              {/* Label for Bank (ON State) */}
+              <span
+                className={`font-semibold ${
+                  isBankEnabled ? "text-green-600" : "text-gray-500"
+                }`}
+              >
+                Bank
+              </span>
+            </div>
           </div>
         </div>
 
@@ -437,9 +485,13 @@ const PageContent = () => {
                           ? "bg-yellow-100"
                           : row.re_check == "true"
                           ? "text-gray-800 bg-gray-100"
+                          : isBankEnabled
+                          ? row.transaction_type === "Deposit"
+                            ? "text-green-800 bg-green-100"
+                            : "text-red-800 bg-red-100"
                           : row.transaction_type === "Deposit"
-                          ? "text-green-800 bg-green-100"
-                          : "text-red-800 bg-red-100"
+                          ? "text-red-800 bg-red-100"
+                          : "text-green-800 bg-green-100"
                       }`}
                     >
                       <td className="px-4 py-2 border border-gray-600 text-center">
@@ -489,18 +541,37 @@ const PageContent = () => {
                         {row.created_by}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row.transaction_type}
+                        {isBankEnabled
+                          ? row.transaction_type
+                          : row.transaction_type === "Deposit"
+                          ? "Withdraw"
+                          : "Deposit"}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        {Number(row.old_bank_balance).toLocaleString("en-IN")}
-                      </td>
+                      {isBankEnabled ? (
+                        <td className="px-4 py-2 border border-gray-600">
+                          {Number(row.old_bank_balance).toLocaleString("en-IN")}
+                        </td>
+                      ) : (
+                        <td className="px-4 py-2 border border-gray-600">
+                          {Number(row.old_website_balance).toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-2 border border-gray-600">
                         {Number(row.amount).toLocaleString("en-IN")}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        ₹{" "}
-                        {Number(row.effective_balance).toLocaleString("en-IN")}
-                      </td>
+                      {
+                        <td className="px-4 py-2 border border-gray-600">
+                          {isBankEnabled
+                            ? Number(row.effective_balance).toLocaleString(
+                                "en-IN"
+                              )
+                            : Number(row.new_website_balance).toLocaleString(
+                                "en-IN"
+                              )}
+                        </td>
+                      }
                       <td className="px-4 py-2 border border-gray-600">
                         {new Intl.DateTimeFormat("en-IN", {
                           year: "numeric",
