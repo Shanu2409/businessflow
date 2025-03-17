@@ -151,7 +151,11 @@ const PageContent = () => {
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                   className="flex items-center w-full mb-4"
                 >
-                  {isFilterOpen ? <FaChevronUp className="mr-2" /> : <FaChevronDown className="mr-2" />}
+                  {isFilterOpen ? (
+                    <FaChevronUp className="mr-2" />
+                  ) : (
+                    <FaChevronDown className="mr-2" />
+                  )}
                   <span className="text-lg font-semibold">Filter & Search</span>
                 </button>
                 {isFilterOpen && (
@@ -182,16 +186,33 @@ const PageContent = () => {
                 <tbody>
                   {currentRows.map((row, rowIndex) => (
                     <tr key={rowIndex} className="text-center">
-                      <td className="px-4 py-2 border">{row.website_name}</td>
+                      <td
+                        className="border px-4 py-2 cursor-pointer text-blue-500 hover:underline"
+                        onClick={() =>
+                          router.push(`/transaction?search=${row.website_name}`)
+                        }
+                      >
+                        {row.website_name}
+                      </td>
                       <td className="px-4 py-2 border">{row.url}</td>
-                      <td className="px-4 py-2 border">{row.current_balance}</td>
-                      <td className="px-4 py-2 border">{row.created_by}</td>
-                      <td className="px-4 py-2 border">{new Date(row.createdAt).toLocaleString()}</td>
                       <td className="px-4 py-2 border">
-                        <button onClick={() => handleIsEdit(row)} className="text-blue-500">
+                        {row.current_balance}
+                      </td>
+                      <td className="px-4 py-2 border">{row.created_by}</td>
+                      <td className="px-4 py-2 border">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 border">
+                        <button
+                          onClick={() => handleIsEdit(row)}
+                          className="text-blue-500"
+                        >
                           <FaEdit />
                         </button>
-                        <button onClick={() => handleDelete(row._id)} className="text-red-500 ml-3">
+                        <button
+                          onClick={() => handleDelete(row._id)}
+                          className="text-red-500 ml-3"
+                        >
                           <FaTrash />
                         </button>
                       </td>
