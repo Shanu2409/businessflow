@@ -174,24 +174,56 @@ const PageContent = () => {
                 <table className="w-full border-collapse">
                   <thead className="text-left text-white bg-secondary">
                     <tr>
-                      <th className="px-4 py-2 border border-gray-600">Sr. No.</th>
-                      <th className="px-4 py-2 border border-gray-600">Bank Name</th>
-                      <th className="px-4 py-2 border border-gray-600">IFSC Code</th>
-                      <th className="px-4 py-2 border border-gray-600">Account Number</th>
-                      <th className="px-4 py-2 border border-gray-600">Current Balance</th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Sr. No.
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Bank Name
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        IFSC Code
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Account Number
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Current Balance
+                      </th>
                       {user?.type === "admin" && (
-                        <th className="px-4 py-2 border border-gray-600">Actions</th>
+                        <th className="px-4 py-2 border border-gray-600">
+                          Actions
+                        </th>
                       )}
                     </tr>
                   </thead>
                   <tbody>
                     {data.map((row, index) => (
                       <tr key={row._id}>
-                        <td className="border px-4 py-2">{index + 1 + (page - 1) * itemsPerPage}</td>
-                        <td className="border px-4 py-2">{row.bank_name}</td>
-                        <td className="border px-4 py-2">{row.ifsc_code}</td>
-                        <td className="border px-4 py-2">{row.account_number}</td>
-                        <td className="border px-4 py-2">{row.current_balance}</td>
+                        <td className="border px-4 py-2">
+                          {index + 1 + (page - 1) * itemsPerPage}
+                        </td>
+                        <td
+                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.bank_name}`)
+                          }
+                        >
+                          {row.bank_name}
+                        </td>
+                        <td
+                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.ifsc_code}`)
+                          }
+                        >
+                          {row.ifsc_code}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {row.account_number}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {row.current_balance}
+                        </td>
                         {user?.type === "admin" && (
                           <td className="border px-4 py-2">
                             <button
