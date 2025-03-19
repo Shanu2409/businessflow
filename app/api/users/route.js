@@ -15,6 +15,15 @@ export async function POST(request) {
       current_balance,
     } = await request.json();
 
+    const existingUser = await User.findOne({ username });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { Message: "User with this username already exists" },
+        { status: 400 }
+      );
+    }
+
     const newWebsite = new UserModal({
       username,
       website_name,

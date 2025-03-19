@@ -8,7 +8,9 @@ export async function GET(request) {
     await connection();
 
     // Fetch bank data (excluding _id and __v)
-    const banks = await Bank.find().select("-_id -__v");
+    const banks = await Bank.find().select(
+      "bank_name ifsc_code current_balance -_id"
+    );
 
     // Convert MongoDB data to an array of objects
     const bankData = banks.map((bank) => bank.toObject());
@@ -27,7 +29,8 @@ export async function GET(request) {
     return new Response(buffer, {
       headers: {
         "Content-Disposition": 'attachment; filename="banks.xlsx"',
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       },
     });
   } catch (error) {
