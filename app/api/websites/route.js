@@ -9,6 +9,15 @@ export async function POST(request) {
     const { website_name, url, current_balance, created_by } =
       await request.json();
 
+    const existingWebsite = await Website.findOne({ website_name });
+
+    if (existingWebsite) {
+      return NextResponse.json(
+        { Message: "Website with this name already exists" },
+        { status: 400 }
+      );
+    }
+
     const newWebsite = new Website({
       website_name,
       url,

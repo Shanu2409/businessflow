@@ -14,6 +14,15 @@ export async function POST(request) {
       created_by,
     } = await request.json();
 
+    const existingBank = await Bank.findOne({ bank_name });
+
+    if (existingBank) {
+      return NextResponse.json(
+        { Message: "Bank with this name already exists" },
+        { status: 400 }
+      );
+    }
+
     const newBank = new Bank({
       bank_name,
       ifsc_code,
