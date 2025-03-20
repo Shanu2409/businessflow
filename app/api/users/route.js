@@ -15,7 +15,7 @@ export async function POST(request) {
       current_balance,
     } = await request.json();
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await UserModal.findOne({ username });
 
     if (existingUser) {
       return NextResponse.json(
