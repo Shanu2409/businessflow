@@ -27,22 +27,37 @@ export async function PUT(request, context) {
       await request.json();
     // Uncomment and modify the update operation as needed:
     console.log("type", type);
+
+    // Construct the update object based on type
+    const updateObject = type
+      ? {
+          $push: { history: "+" + current_balance }, 
+          $set: {
+            website_name,
+            account_number,
+            current_balance,
+            url,
+          },
+        }
+      : {
+          $push: { history: "-" + current_balance }, 
+          $set: {
+            website_name,
+            account_number,
+            current_balance,
+            url,
+          },
+        };
+
+    // Update the document in MongoDB
     await Website.updateOne(
       { website_name: name },
-      {
-        $set: {
-          website_name: website_name,
-          account_number,
-          current_balance,
-          url,
-          depositHistory: type ? [current_balance] : [],
-          withdrawHistory: type ? [] : [current_balance],
-        },
-      },
+      updateObject,
       { upsert: true }
     );
+
     return NextResponse.json({
-      Message: `Website account updated successfully`,
+      Message: "Website account updated successfully",
     });
   } catch (error) {
     console.error(error);
