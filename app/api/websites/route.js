@@ -22,6 +22,8 @@ export async function POST(request) {
       website_name,
       url,
       current_balance: parseFloat(current_balance),
+      depositHistory: [parseFloat(current_balance)],
+      withdrawHistory: [],
       created_by,
     });
 

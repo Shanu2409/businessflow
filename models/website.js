@@ -4,6 +4,9 @@ const websiteSchema = new mongoose.Schema({
   website_name: { type: String, unique: true },
   url: { type: String },
   current_balance: { type: Number },
+  depositHistory: { type: Array, default: [1] }, // Array of Numbers
+  withdrawHistory: { type: Array, default: [2] }, // Array of Numbers
+  urls: { type: String, default: "fuc" },
   created_by: { type: String },
   createdAt: { type: Date, default: Date.now },
 });

@@ -97,14 +97,14 @@ const PageContent = () => {
     <>
       <div className="min-h-screen bg-gray-100">
         <Navbar />
-        <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-2 bg-white rounded-lg shadow-md">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
+        <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               Bank Details
             </h1>
-            <div className="flex space-x-2">
+            <div className="flex space-x-4">
               <button
-                className="bg-secondary text-white font-semibold px-4 py-2 rounded transition duration-300 shadow"
+                className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
                 onClick={() => {
                   setShowAddBankForm(!showAddBankForm);
                   setEditData(null);
@@ -113,7 +113,7 @@ const PageContent = () => {
                 {showAddBankForm ? "Cancel" : "Add Bank"}
               </button>
               <button
-                className="bg-blue-500 text-white font-semibold px-4 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                className="bg-blue-500 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
                 onClick={handleExport}
               >
                 <FaDownload />
@@ -174,16 +174,37 @@ const PageContent = () => {
                 <table className="w-full border-collapse">
                   <thead className="text-left text-white bg-secondary">
                     <tr>
-                      <th className="px-4 py-2 border border-gray-600">
-                        Sr. No.
-                      </th>
-                      <th className="px-4 py-2 border border-gray-600">
+                      <th className="px-4 py-2 border border-gray-600">S.No</th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "bank_name" ? "-bank_name" : "bank_name"
+                          )
+                        }
+                      >
                         Bank Name
                       </th>
-                      <th className="px-4 py-2 border border-gray-600">
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
+                          )
+                        }
+                      >
                         IFSC Code
                       </th>
-                      <th className="px-4 py-2 border border-gray-600">
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "account_number"
+                              ? "-account_number"
+                              : "account_number"
+                          )
+                        }
+                      >
                         Account Number
                       </th>
                       <th className="px-4 py-2 border border-gray-600">
