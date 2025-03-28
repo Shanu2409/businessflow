@@ -88,7 +88,7 @@ const PageContent = () => {
 
   // Ensure search value updates but doesn't immediately trigger fetch
   const handleSearchChange = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setSearchValue(value);
     // Removed the immediate setSearch call; now handled by the debounced effect
   };
