@@ -33,6 +33,7 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -72,6 +73,7 @@ const PageContent = () => {
 
   const handleIsEdit = (data) => {
     setEditData(data);
+    setHistory(data?.history);
     setShowWebsiteForm(true);
   };
 
@@ -118,6 +120,7 @@ const PageContent = () => {
                 onClick={() => {
                   setShowWebsiteForm(!showWebsiteForm);
                   setEditData(null);
+                  setHistory([]);
                 }}
               >
                 {showWebsiteForm ? "Cancel" : "Add Website"}
@@ -134,12 +137,45 @@ const PageContent = () => {
 
           {/* Add Website Form */}
           {showWebsiteForm && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
               <AddWebsiteForm
                 editData={editData}
                 setShowAddWebsiteForm={setShowWebsiteForm}
                 fetchData={fetchWebsiteData}
               />
+
+              {/* History List */}
+              {history.length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-lg shadow-md w-full sm:w-1/3">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-4">
+                    History
+                  </h2>
+                  <div className="max-h-60 overflow-y-auto">
+                    {" "}
+                    {/* Set a max height and enable vertical scrolling */}
+                    <ul className="space-y-2">
+                      {history.map((entry, index) => {
+                        const isPositive = entry.startsWith("+");
+                        const textColorClass = isPositive
+                          ? "text-green-500"
+                          : "text-red-500"; // Green for positive, red for negative
+
+                        return (
+                          <li
+                            key={index}
+                            className={`px-4 py-2 rounded-md ${textColorClass} flex justify-between items-baseline hover:bg-gray-200 transition duration-300 cursor-pointer`}
+                          >
+                            <span className="text-lg">{entry}</span>
+                            <span className="text-sm text-gray-500">
+                              Entry {index + 1}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -210,7 +246,7 @@ const PageContent = () => {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => handleDelete(row._id)}
+                          onClick={() => handleDelete(row.website_name)}
                           className="text-red-500 ml-3"
                         >
                           <FaTrash />
