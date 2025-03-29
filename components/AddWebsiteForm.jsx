@@ -136,7 +136,7 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
               placeholder="Website Name"
               aria-label="Website Name"
               value={websiteName}
-              onChange={(e) => setWebsiteName(e.target.value)}
+              onChange={(e) => setWebsiteName(e.target.value.toUpperCase())}
             />
           </div>
 

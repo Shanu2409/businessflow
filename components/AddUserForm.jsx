@@ -132,7 +132,7 @@ const DropdownMenu = ({
             placeholder="Search..."
             className="w-full p-2 border-b border-gray-300 focus:outline-none"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
           />
           <div className="max-h-40 overflow-y-auto">

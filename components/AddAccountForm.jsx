@@ -15,7 +15,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
   useEffect(() => {
     if (editData) {
       setUsername(editData.username);
-      setPassword(editData.password)
+      setPassword(editData.password);
     }
   }, [editData]);
 
@@ -23,7 +23,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     setLoading(true);
     try {
       const response = await axios.put(`/api/accounts/${data.username}`, {
-        password : data.password
+        password: data.password,
       });
       toast.success(response?.data?.message);
       fetchData();
@@ -52,7 +52,10 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post("/api/accounts", { username, password });
+      const response = await axios.post("/api/accounts", {
+        username,
+        password,
+      });
 
       if (response.status === 200) {
         toast.success("User added successfully.");
@@ -92,7 +95,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
               style={{ cursor: editData ? "not-allowed" : "default" }}
               aria-label="Username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toUpperCase())}
             />
           </div>
 
