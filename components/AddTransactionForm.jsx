@@ -55,16 +55,31 @@ const AddTransactionForm = ({
   }, [selectedUser, userList]);
 
   const fetchBankList = async () => {
+    if (typeof window === "undefined") return;
+
+    const userRaw = sessionStorage.getItem("user");
+    if (!userRaw) return;
+
+    const user = JSON.parse(userRaw);
+    const isAdmin = user.type === "admin";
+
+    if (!isAdmin) {
+      const allowedBanks = user.allowed_banks || [];
+      setBankList(allowedBanks);
+      return;
+    }
+
+    // Admin: fetch all banks
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true`
+        "/api/banks?onlyNames=true"
       );
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
-        setBankList(responseData?.data || []); // ✅ Update state here
-      }
+      const bankData = responseData?.data || [];
+
+      sessionStorage.setItem("banks", JSON.stringify(bankData));
+      setBankList(bankData);
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("Error fetching bank list for admin:", error);
     }
   };
 

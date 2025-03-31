@@ -24,16 +24,19 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { id } = context.params;
-    const { password } = await request.json();
+    const { password, allowed_banks } = await request.json();
 
     // Ensure username exists before updating
     const updatedUser = await Account.findOneAndUpdate(
       { username: id },
-      { $set: { password } }
+      { $set: { password, allowed_banks } }
     );
 
     if (!updatedUser) {
-      return NextResponse.json({ Message: "Account not found" }, { status: 404 });
+      return NextResponse.json(
+        { Message: "Account not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
