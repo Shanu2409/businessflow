@@ -47,19 +47,6 @@ const PageContent = () => {
     }
   }, []);
 
-  const fetchBankList = async () => {
-    try {
-      const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true`
-      );
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
-
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -83,7 +70,6 @@ const PageContent = () => {
   // Fetch data on mount and when dependencies change
   useEffect(() => {
     fetchTransactions();
-    fetchBankList(); // Also fetch bank list on component mount
   }, [fetchTransactions]);
 
   // Ensure search value updates but doesn't immediately trigger fetch

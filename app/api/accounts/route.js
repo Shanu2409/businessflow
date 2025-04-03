@@ -1,19 +1,18 @@
 import connection from "@/lib/mongodb";
 import Account from "@/models/accountUser";
+import { all } from "axios";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
   try {
     await connection();
 
-    const {
-      username,
-      password,
-    } = await request.json();
+    const { username, password, allowed_banks } = await request.json();
 
     const newAccount = new Account({
       username,
       password,
+      allowed_banks, // Default to an empty array
     });
 
     await newAccount.save();
@@ -37,13 +36,12 @@ export async function GET(request) {
     await connection();
 
     const query = {
-        type: "user", // Ensuring only users are fetched
-        $or: [
-          { username: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
-      };
-      
+      type: "user", // Ensuring only users are fetched
+      $or: [
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ],
+    };
 
     // Get the total count of documents matching the query
     const totalData = await Account.countDocuments(query);
