@@ -112,9 +112,9 @@ export async function GET(request) {
 
     const query = {
       $or: [
-        { bank_name: { $regex: search, $options: "i" } },
-        { website_name: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
+        { bank_name: { $regex: search } },
+        { website_name: { $regex: search } },
+        { username: { $regex: search } },
       ],
     };
 
