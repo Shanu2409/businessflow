@@ -13,6 +13,7 @@ import {
   FiPlus,
   FiArrowRight,
   FiRefreshCw,
+  FiPieChart,
 } from "react-icons/fi";
 
 const HomeMenu = () => {
@@ -23,6 +24,7 @@ const HomeMenu = () => {
     users: 0,
     websites: 0,
     accounts: 0,
+    reports: "N/A",
   });
   const [loading, setLoading] = useState(false);
 
@@ -59,6 +61,13 @@ const HomeMenu = () => {
       icon: <FiGlobe className="text-3xl" />,
       color: "bg-gradient-to-r from-amber-400 to-amber-600",
       description: "Configure websites",
+    },
+    {
+      title: "Reports",
+      link: "/reports",
+      icon: <FiPieChart className="text-3xl" />,
+      color: "bg-gradient-to-r from-red-400 to-red-600",
+      description: "View data analytics & reports",
     },
   ];
 
@@ -247,15 +256,15 @@ const HomeMenu = () => {
           </a>
 
           <a
-            href="/website?add=true"
+            href="/reports"
             className="card flex items-center p-4 hover:bg-gray-50 transition-colors"
           >
-            <div className="rounded-full bg-amber-500 bg-opacity-10 p-3 mr-4">
-              <FiGlobe className="text-2xl text-amber-500" />
+            <div className="rounded-full bg-red-500 bg-opacity-10 p-3 mr-4">
+              <FiPieChart className="text-2xl text-red-500" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-800">Add New Website</h3>
-              <p className="text-sm text-gray-500">Configure sites</p>
+              <h3 className="font-medium text-gray-800">Reports & Analytics</h3>
+              <p className="text-sm text-gray-500">View insights</p>
             </div>
           </a>
         </div>
