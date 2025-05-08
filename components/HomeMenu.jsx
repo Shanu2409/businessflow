@@ -113,29 +113,12 @@ const HomeMenu = () => {
     }
   };
 
-  const fetchDashboardStats = async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.get("/api/stats");
-      if (data.success) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error("Error fetching dashboard statistics:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     // Fetch entities for dropdowns
     if (!userList && !websiteList) {
       fetchWebsiteList();
       fetchUserList();
     }
-
-    // Fetch dashboard statistics
-    // fetchDashboardStats();
   }, []);
 
   return (
@@ -147,14 +130,6 @@ const HomeMenu = () => {
             Welcome to your BusinessFlow dashboard
           </p>
         </div>
-        <button
-          onClick={fetchDashboardStats}
-          className="flex items-center gap-2 btn btn-secondary"
-          disabled={loading}
-        >
-          <FiRefreshCw className={loading ? "animate-spin" : ""} />
-          Refresh Stats
-        </button>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -176,14 +151,6 @@ const HomeMenu = () => {
                 <div className="rounded-full bg-white bg-opacity-20 p-3">
                   {item.icon}
                 </div>
-              </div>
-              <div className="mt-4 flex items-baseline">
-                <p className="text-4xl font-bold">
-                  {stats[item.title.toLowerCase()] || "-"}
-                </p>
-                <p className="ml-2 text-sm font-medium text-white text-opacity-70">
-                  total
-                </p>
               </div>
             </div>
 

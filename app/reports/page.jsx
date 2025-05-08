@@ -1006,10 +1006,14 @@ const ReportsPage = () => {
   // Function to render user activity report
   const renderUserActivity = () => {
     if (!reportData || !reportData.data) {
-      return <div className="p-6 text-center">No data available</div>;
+      return <div className="p-6 text-center">No user activity data available</div>;
     }
 
     const { data } = reportData;
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      return <div className="p-6 text-center">No user activity data found for the selected period</div>;
+    }
 
     // Prepare data for the chart
     const chartData = {
@@ -1093,6 +1097,7 @@ const ReportsPage = () => {
             <thead className="bg-gray-100">
               <tr>
                 <th className="border border-gray-300 px-4 py-2">Username</th>
+                <th className="border border-gray-300 px-4 py-2">Website</th>
                 <th className="border border-gray-300 px-4 py-2">Transactions</th>
                 <th className="border border-gray-300 px-4 py-2">Amount Processed</th>
                 <th className="border border-gray-300 px-4 py-2">First Activity</th>
@@ -1104,7 +1109,8 @@ const ReportsPage = () => {
               {data.length > 0 ? (
                 data.map((user, index) => (
                   <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-300 px-4 py-2">{user.username}</td>
+                    <td className="border border-gray-300 px-4 py-2">{user.username || '-'}</td>
+                    <td className="border border-gray-300 px-4 py-2">{user.website_name || '-'}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center">{user.totalTransactions || 0}</td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
                       {new Intl.NumberFormat('en-IN', { 
@@ -1126,13 +1132,13 @@ const ReportsPage = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="border border-gray-300 px-4 py-2 text-center">No data available</td>
+                  <td colSpan="7" className="border border-gray-300 px-4 py-2 text-center">No user activity data available</td>
                 </tr>
               )}
             </tbody>
             <tfoot className="bg-gray-100 font-bold">
               <tr>
-                <td className="border border-gray-300 px-4 py-2">Total</td>
+                <td className="border border-gray-300 px-4 py-2" colSpan="2">Total</td>
                 <td className="border border-gray-300 px-4 py-2 text-center">
                   {data.reduce((sum, user) => sum + (user.totalTransactions || 0), 0)}
                 </td>
@@ -1155,11 +1161,15 @@ const ReportsPage = () => {
   // Function to render trend analysis report
   const renderTrendAnalysis = () => {
     if (!reportData || !reportData.data) {
-      return <div className="p-6 text-center">No data available</div>;
+      return <div className="p-6 text-center">No trend data available</div>;
     }
 
     const { data } = reportData;
     
+    if (!Array.isArray(data) || data.length === 0) {
+      return <div className="p-6 text-center">No trend data found for the selected period</div>;
+    }
+
     // Prepare data for the line chart
     const chartData = {
       labels: data.map(item => typeof item.date === 'string' ? item.date.substring(0, 10) : item.label || ''),
@@ -1170,7 +1180,8 @@ const ReportsPage = () => {
           borderColor: colors.deposit.replace('0.6', '1'),
           backgroundColor: colors.deposit.replace('0.6', '0.2'),
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          yAxisID: 'y'
         },
         {
           label: 'Withdrawals',
@@ -1178,7 +1189,8 @@ const ReportsPage = () => {
           borderColor: colors.withdraw.replace('0.6', '1'),
           backgroundColor: colors.withdraw.replace('0.6', '0.2'),
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          yAxisID: 'y'
         },
         {
           label: 'Net Flow',
@@ -1188,7 +1200,8 @@ const ReportsPage = () => {
           borderWidth: 2,
           tension: 0.4,
           pointRadius: 4,
-          pointBackgroundColor: colors.net.replace('0.6', '1')
+          pointBackgroundColor: colors.net.replace('0.6', '1'),
+          yAxisID: 'y'
         }
       ]
     };
@@ -1196,6 +1209,11 @@ const ReportsPage = () => {
     // Trend analysis options
     const trendOptions = {
       ...chartOptions,
+      responsive: true,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
       scales: {
         y: {
           title: {
@@ -1212,6 +1230,12 @@ const ReportsPage = () => {
               }).format(value);
             }
           }
+        },
+        x: {
+          title: {
+            display: true,
+            text: filters.groupBy === 'day' ? 'Date' : filters.groupBy === 'month' ? 'Month' : 'Year'
+          }
         }
       }
     };
@@ -1223,6 +1247,37 @@ const ReportsPage = () => {
         {/* Chart */}
         <div className="mb-6" style={{ height: '400px' }}>
           <Line data={chartData} options={trendOptions} />
+        </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h4 className="text-sm font-medium text-green-700 mb-2">Total Deposits</h4>
+            <p className="text-xl font-bold">
+              {new Intl.NumberFormat('en-IN', { 
+                style: 'currency', 
+                currency: 'INR' 
+              }).format(data.reduce((sum, item) => sum + (item.depositAmount || 0), 0))}
+            </p>
+          </div>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <h4 className="text-sm font-medium text-red-700 mb-2">Total Withdrawals</h4>
+            <p className="text-xl font-bold">
+              {new Intl.NumberFormat('en-IN', { 
+                style: 'currency', 
+                currency: 'INR' 
+              }).format(data.reduce((sum, item) => sum + (item.withdrawAmount || 0), 0))}
+            </p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <h4 className="text-sm font-medium text-purple-700 mb-2">Net Flow</h4>
+            <p className="text-xl font-bold">
+              {new Intl.NumberFormat('en-IN', { 
+                style: 'currency', 
+                currency: 'INR' 
+              }).format(data.reduce((sum, item) => sum + ((item.depositAmount || 0) - (item.withdrawAmount || 0)), 0))}
+            </p>
+          </div>
         </div>
         
         {/* Data Table */}
@@ -1238,60 +1293,83 @@ const ReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {data.length > 0 ? (
-                data.map((item, index) => {
-                  // Calculate trend direction compared to previous period
-                  let trendIcon = null;
-                  if (index > 0) {
-                    const currentNet = (item.depositAmount || 0) - (item.withdrawAmount || 0);
-                    const prevNet = (data[index-1].depositAmount || 0) - (data[index-1].withdrawAmount || 0);
-                    if (currentNet > prevNet) {
-                      trendIcon = <span className="text-green-500">↑</span>;
-                    } else if (currentNet < prevNet) {
-                      trendIcon = <span className="text-red-500">↓</span>;
-                    } else {
-                      trendIcon = <span className="text-gray-500">→</span>;
-                    }
+              {data.map((item, index) => {
+                // Calculate trend direction compared to previous period
+                let trendIcon = null;
+                if (index > 0) {
+                  const currentNet = (item.depositAmount || 0) - (item.withdrawAmount || 0);
+                  const prevNet = (data[index-1].depositAmount || 0) - (data[index-1].withdrawAmount || 0);
+                  if (currentNet > prevNet) {
+                    trendIcon = <span className="text-green-500">↑</span>;
+                  } else if (currentNet < prevNet) {
+                    trendIcon = <span className="text-red-500">↓</span>;
+                  } else {
+                    trendIcon = <span className="text-gray-500">→</span>;
                   }
-                  
-                  return (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {item.date ? (typeof item.date === 'string' ? item.date.substring(0, 10) : format(new Date(item.date), 'yyyy-MM-dd')) : item.label || '-'}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
-                        {new Intl.NumberFormat('en-IN', { 
-                          style: 'currency', 
-                          currency: 'INR',
-                          maximumFractionDigits: 0 
-                        }).format(item.depositAmount || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right text-red-600">
-                        {new Intl.NumberFormat('en-IN', { 
-                          style: 'currency', 
-                          currency: 'INR',
-                          maximumFractionDigits: 0
-                        }).format(item.withdrawAmount || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right font-medium">
-                        {new Intl.NumberFormat('en-IN', { 
-                          style: 'currency', 
-                          currency: 'INR',
-                          maximumFractionDigits: 0
-                        }).format((item.depositAmount || 0) - (item.withdrawAmount || 0))}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-center text-xl">
-                        {trendIcon || '-'}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="5" className="border border-gray-300 px-4 py-2 text-center">No data available</td>
-                </tr>
-              )}
+                }
+                
+                return (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {item.date ? 
+                        (typeof item.date === 'string' ? item.date.substring(0, 10) : format(new Date(item.date), 'yyyy-MM-dd')) 
+                        : item.label || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
+                      {new Intl.NumberFormat('en-IN', { 
+                        style: 'currency', 
+                        currency: 'INR',
+                        maximumFractionDigits: 0 
+                      }).format(item.depositAmount || 0)}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right text-red-600">
+                      {new Intl.NumberFormat('en-IN', { 
+                        style: 'currency', 
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                      }).format(item.withdrawAmount || 0)}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right font-medium">
+                      {new Intl.NumberFormat('en-IN', { 
+                        style: 'currency', 
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                      }).format((item.depositAmount || 0) - (item.withdrawAmount || 0))}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center text-xl">
+                      {trendIcon || '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
+            <tfoot className="bg-gray-100 font-bold">
+              <tr>
+                <td className="border border-gray-300 px-4 py-2">Total</td>
+                <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
+                  {new Intl.NumberFormat('en-IN', { 
+                    style: 'currency', 
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                  }).format(data.reduce((sum, item) => sum + (item.depositAmount || 0), 0))}
+                </td>
+                <td className="border border-gray-300 px-4 py-2 text-right text-red-600">
+                  {new Intl.NumberFormat('en-IN', { 
+                    style: 'currency', 
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                  }).format(data.reduce((sum, item) => sum + (item.withdrawAmount || 0), 0))}
+                </td>
+                <td className="border border-gray-300 px-4 py-2 text-right font-medium">
+                  {new Intl.NumberFormat('en-IN', { 
+                    style: 'currency', 
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                  }).format(data.reduce((sum, item) => sum + ((item.depositAmount || 0) - (item.withdrawAmount || 0)), 0))}
+                </td>
+                <td className="border border-gray-300 px-4 py-2"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
