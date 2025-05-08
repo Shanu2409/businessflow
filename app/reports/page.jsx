@@ -129,12 +129,15 @@ const ReportsPage = () => {
         axios.get('/api/users?onlyNames=true')
       ]);
       
-      setAvailableBanks(banksRes.data.data || []);
-      setAvailableWebsites(websitesRes.data.data || []);
+      // Make sure we're setting arrays of strings, not objects
+      setAvailableBanks(Array.isArray(banksRes.data.data) ? banksRes.data.data : []);
+      setAvailableWebsites(Array.isArray(websitesRes.data.data) ? websitesRes.data.data : []);
       
       // For users, we need to extract usernames
       if (usersRes.data.data) {
-        const usernames = Object.keys(usersRes.data.data);
+        const usernames = Array.isArray(usersRes.data.data) 
+          ? usersRes.data.data 
+          : Object.keys(usersRes.data.data);
         setAvailableUsers(usernames);
       }
     } catch (error) {
@@ -486,152 +489,243 @@ const ReportsPage = () => {
 
   // Function to render transaction summary
   const renderTransactionSummary = () => {
-    if (!reportData || !reportData.data || !reportData.data.transactions) {
-      return <div className="p-6 text-center">No transaction data available</div>;
-    }
+    try {
+      if (!reportData) {
+        return <div className="p-6 text-center">No transaction data available</div>;
+      }
 
-    const { transactions } = reportData.data;
-    
-    // Calculate percentages for the charts
-    const depositPercentage = transactions.totalAmount > 0 
-      ? (transactions.totalDeposits / transactions.totalAmount) * 100 
-      : 0;
-    
-    const withdrawalPercentage = transactions.totalAmount > 0 
-      ? (transactions.totalWithdrawals / transactions.totalAmount) * 100 
-      : 0;
-    
-    return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-6">Transaction Summary</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Transaction Stats */}
-          <div>
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h3 className="text-sm font-medium text-blue-700 mb-2">Total Transactions</h3>
-                <p className="text-2xl font-bold">{transactions.totalCount || 0}</p>
+      // Safely extract data with fallbacks at each level
+      const reportDataObj = reportData || {};
+      const rawData = reportDataObj.data || {};
+      
+      // Check if data is an array (direct transaction data) or nested structure
+      const transactionData = Array.isArray(rawData) ? 
+        rawData : 
+        (rawData.transactions ? [rawData.transactions] : []);
+      
+      if (!transactionData || transactionData.length === 0) {
+        return <div className="p-6 text-center">No transaction data available for the selected period</div>;
+      }
+      
+      // Calculate summary values from the transaction data
+      const summary = {
+        totalCount: 0,
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        depositCount: 0,
+        withdrawalCount: 0,
+        totalAmount: 0
+      };
+
+      // Safely process transaction data
+      transactionData.forEach(item => {
+        if (item) {
+          summary.totalCount += Number(item.count || 0);
+          summary.totalDeposits += Number(item.depositAmount || item.totalDeposits || 0);
+          summary.totalWithdrawals += Number(item.withdrawAmount || item.totalWithdrawals || 0);
+          summary.depositCount += Number(item.depositCount || 0);
+          summary.withdrawalCount += Number(item.withdrawCount || 0);
+        }
+      });
+      
+      // Calculate total amount after initial reduction
+      summary.totalAmount = summary.totalDeposits + summary.totalWithdrawals;
+      
+      // Calculate percentages for the charts (guard against division by zero)
+      const depositPercentage = summary.totalAmount > 0 
+        ? (summary.totalDeposits / summary.totalAmount) * 100 
+        : 0;
+      
+      const withdrawalPercentage = summary.totalAmount > 0 
+        ? (summary.totalWithdrawals / summary.totalAmount) * 100 
+        : 0;
+
+      // Handle nested data structure (system overview format)
+      const displayItems = Array.isArray(transactionData[0]) ? 
+        transactionData[0] : 
+        transactionData;
+      
+      return (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-6">Transaction Summary</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Transaction Stats */}
+            <div>
+              <div className="grid grid-cols-1 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-medium text-blue-700 mb-2">Total Transactions</h3>
+                  <p className="text-2xl font-bold">{summary.totalCount || 0}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h3 className="text-sm font-medium text-green-700 mb-2">Total Deposit Amount</h3>
+                  <p className="text-2xl font-bold">
+                    {new Intl.NumberFormat('en-IN', { 
+                      style: 'currency', 
+                      currency: 'INR' 
+                    }).format(summary.totalDeposits || 0)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">{summary.depositCount || 0} transactions</p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <h3 className="text-sm font-medium text-red-700 mb-2">Total Withdrawal Amount</h3>
+                  <p className="text-2xl font-bold">
+                    {new Intl.NumberFormat('en-IN', { 
+                      style: 'currency', 
+                      currency: 'INR' 
+                    }).format(summary.totalWithdrawals || 0)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">{summary.withdrawalCount || 0} transactions</p>
+                </div>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h3 className="text-sm font-medium text-green-700 mb-2">Total Deposit Amount</h3>
-                <p className="text-2xl font-bold">
-                  {new Intl.NumberFormat('en-IN', { 
-                    style: 'currency', 
-                    currency: 'INR' 
-                  }).format(transactions.totalDeposits || 0)}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">{transactions.depositCount || 0} transactions</p>
-              </div>
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <h3 className="text-sm font-medium text-red-700 mb-2">Total Withdrawal Amount</h3>
-                <p className="text-2xl font-bold">
-                  {new Intl.NumberFormat('en-IN', { 
-                    style: 'currency', 
-                    currency: 'INR' 
-                  }).format(transactions.totalWithdrawals || 0)}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">{transactions.withdrawalCount || 0} transactions</p>
+            </div>
+            
+            {/* Transaction Chart */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Transaction Distribution</h3>
+              <div className="h-52 flex items-center">
+                <div className="w-full">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-green-700">Deposits</span>
+                    <span className="text-sm text-green-700">
+                      {depositPercentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div 
+                      className="bg-green-500 h-4 rounded-full" 
+                      style={{ width: `${depositPercentage}%` }}
+                    ></div>
+                  </div>
+                  
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-red-700">Withdrawals</span>
+                    <span className="text-sm text-red-700">
+                      {withdrawalPercentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div 
+                      className="bg-red-500 h-4 rounded-full" 
+                      style={{ width: `${withdrawalPercentage}%` }}
+                    ></div>
+                  </div>
+                  
+                  <div className="mt-6 text-center">
+                    <p className="font-medium">Net Flow: 
+                      <span className={summary.totalDeposits >= summary.totalWithdrawals ? 
+                        "text-green-600 ml-2" : "text-red-600 ml-2"}>
+                        {new Intl.NumberFormat('en-IN', { 
+                          style: 'currency', 
+                          currency: 'INR' 
+                        }).format((summary.totalDeposits || 0) - (summary.totalWithdrawals || 0))}
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Transaction Chart */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Transaction Distribution</h3>
-            <div className="h-52 flex items-center">
-              <div className="w-full">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-green-700">Deposits</span>
-                  <span className="text-sm text-green-700">
-                    {depositPercentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                  <div 
-                    className="bg-green-500 h-4 rounded-full" 
-                    style={{ width: `${depositPercentage}%` }}
-                  ></div>
-                </div>
-                
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-red-700">Withdrawals</span>
-                  <span className="text-sm text-red-700">
-                    {withdrawalPercentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                  <div 
-                    className="bg-red-500 h-4 rounded-full" 
-                    style={{ width: `${withdrawalPercentage}%` }}
-                  ></div>
-                </div>
-                
-                <div className="mt-6 text-center">
-                  <p className="font-medium">Net Flow: 
-                    <span className={transactions.totalDeposits >= transactions.totalWithdrawals ? 
-                      "text-green-600 ml-2" : "text-red-600 ml-2"}>
+          {/* Transactions Table */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-3">Transaction Details</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto border-collapse">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-4 py-2 text-left">Date/Group</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Deposits</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Withdrawals</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Net Flow</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayItems && displayItems.length > 0 ? (
+                    displayItems.map((tx, index) => {
+                      const depositAmt = tx?.depositAmount || tx?.totalDeposits || 0;
+                      const withdrawAmt = tx?.withdrawAmount || tx?.totalWithdrawals || 0;
+                      return (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="border border-gray-300 px-4 py-2">
+                            {tx?.date || tx?.label || '-'}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
+                            {new Intl.NumberFormat('en-IN', { 
+                              style: 'currency', 
+                              currency: 'INR' 
+                            }).format(depositAmt)}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right text-red-600">
+                            {new Intl.NumberFormat('en-IN', { 
+                              style: 'currency', 
+                              currency: 'INR' 
+                            }).format(withdrawAmt)}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right font-medium">
+                            {new Intl.NumberFormat('en-IN', { 
+                              style: 'currency', 
+                              currency: 'INR' 
+                            }).format(depositAmt - withdrawAmt)}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right">
+                            {tx?.count || (tx.depositCount + tx.withdrawalCount) || 0}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="border border-gray-300 px-4 py-2 text-center">No transactions found</td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot className="bg-gray-100 font-bold">
+                  <tr>
+                    <td className="border border-gray-300 px-4 py-2">Total</td>
+                    <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
                       {new Intl.NumberFormat('en-IN', { 
                         style: 'currency', 
                         currency: 'INR' 
-                      }).format((transactions.totalDeposits || 0) - (transactions.totalWithdrawals || 0))}
-                    </span>
-                  </p>
-                </div>
-              </div>
+                      }).format(summary.totalDeposits || 0)}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right text-red-600">
+                      {new Intl.NumberFormat('en-IN', { 
+                        style: 'currency', 
+                        currency: 'INR' 
+                      }).format(summary.totalWithdrawals || 0)}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right font-medium">
+                      {new Intl.NumberFormat('en-IN', { 
+                        style: 'currency', 
+                        currency: 'INR' 
+                      }).format((summary.totalDeposits || 0) - (summary.totalWithdrawals || 0))}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right">
+                      {summary.totalCount || 0}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </div>
-        
-        {/* Recent Transactions Table */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-3">Recent Transactions</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto border-collapse">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">User</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Type</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Bank</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Website</th>
-                  <th className="border border-gray-300 px-4 py-2 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.recent && transactions.recent.length > 0 ? (
-                  transactions.recent.map((tx, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {new Date(tx.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">{tx.username}</td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        <span className={tx.transaction_type === 'Deposit' ? 'text-green-600' : 'text-red-600'}>
-                          {tx.transaction_type}
-                        </span>
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">{tx.bank_name}</td>
-                      <td className="border border-gray-300 px-4 py-2">{tx.website_name}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {new Intl.NumberFormat('en-IN', { 
-                          style: 'currency', 
-                          currency: 'INR' 
-                        }).format(tx.amount)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="border border-gray-300 px-4 py-2 text-center">No recent transactions</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+      );
+    } catch (error) {
+      console.error("Error rendering transaction summary:", error);
+      return (
+        <div className="p-6 text-center">
+          <p className="text-red-500 mb-2">Error loading transaction data</p>
+          <button 
+            onClick={fetchReportData} 
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
         </div>
-      </div>
-    );
+      );
+    }
   };
 
   // Function to render balance summary report
@@ -851,7 +945,7 @@ const ReportsPage = () => {
                     <td className="border border-gray-300 px-4 py-2 text-right">
                       {new Intl.NumberFormat('en-IN', { 
                         style: 'currency', 
-                        currency: 'INR'
+                        currency: 'INR' 
                       }).format(totalBankBalance)}
                     </td>
                   </tr>
@@ -932,8 +1026,8 @@ const ReportsPage = () => {
         {
           label: 'Amount Processed',
           data: data.map(user => user.totalAmount || 0),
-          backgroundColor: colors.website,
-          borderColor: colors.website.replace('0.6', '1'),
+          backgroundColor: 'rgba(153, 102, 255, 0.6)',
+          borderColor: 'rgba(153, 102, 255, 1)',
           borderWidth: 1,
           type: 'line',
           yAxisID: 'y1'
@@ -941,8 +1035,14 @@ const ReportsPage = () => {
       ]
     };
 
+    // User activity chart options
     const userActivityOptions = {
       ...chartOptions,
+      responsive: true,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
       scales: {
         y: {
           type: 'linear',

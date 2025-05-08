@@ -135,7 +135,7 @@ const HomeMenu = () => {
     }
 
     // Fetch dashboard statistics
-    fetchDashboardStats();
+    // fetchDashboardStats();
   }, []);
 
   return (
