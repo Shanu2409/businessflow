@@ -107,6 +107,10 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || 20);
     const sort = searchParams.get("sort") || "-createdAt";
     const page = parseInt(searchParams.get("page") || 1);
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const startTime = searchParams.get("startTime");
+    const endTime = searchParams.get("endTime");
 
     await connection();
 
@@ -116,6 +120,21 @@ export async function GET(request) {
         { website_name: { $regex: search } },
         { username: { $regex: search } },
       ],
+    };
+
+    // Add date-time filtering if provided
+    if (startDate) {
+      const startDateTime = startTime 
+        ? `${startDate}T${startTime}:00` 
+        : `${startDate}T00:00:00`;
+      query.createdAt = { $gte: new Date(startDateTime) };
+    }
+    
+    if (endDate) {
+      const endDateTime = endTime 
+        ? `${endDate}T${endTime}:00` 
+        : `${endDate}T23:59:59`;
+      query.createdAt = { ...query.createdAt, $lte: new Date(endDateTime) };
     };
 
     // Get the total count of documents matching the query
