@@ -15,7 +15,6 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   const [currentBalance, setCurrentBalance] = useState("");
   const [loading, setLoading] = useState(false);
   const [transactionType, setTransactionType] = useState("Deposit");
-
   const handleEdit = async (data) => {
     setLoading(true);
     try {
@@ -23,10 +22,19 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
         `/api/websites/${initialWebsiteName}`,
         data
       );
-      toast.success(response?.data?.message);
+      toast.success(response?.data?.Message || "Website updated successfully");
+      setShowAddWebsiteForm(false);
+      fetchData();
+      fetchWebsiteList();
     } catch (error) {
       console.error("Error editing website:", error);
-      toast.error("Error editing website");
+      if (error.response && error.response.status === 400) {
+        toast.error(
+          error.response.data.Message || "Website with this name already exists"
+        );
+      } else {
+        toast.error("Error updating website");
+      }
     }
 
     setLoading(false);
@@ -77,32 +85,38 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
     try {
-      const response = await axios.post("/api/websites", {
-        website_name: websiteName,
-        url: url,
-        current_balance: currentBalance,
-        created_by: user?.username,
-      });
+      try {
+        const response = await axios.post("/api/websites", {
+          website_name: websiteName,
+          url: url,
+          current_balance: currentBalance,
+          created_by: user?.username,
+        });
 
-      if (response.status !== 200) {
-        console.error(response.data.message);
-        toast.error(response.data.message);
-        return;
+        toast.success(response.data.Message || "Website added successfully");
+        fetchData();
+        fetchWebsiteList();
+
+        setWebsiteName("");
+        setUrl("");
+        setCurrentBalance("");
+        setShowAddWebsiteForm(false);
+      } catch (err) {
+        // Check for specific error responses
+        if (err.response && err.response.status === 400) {
+          toast.error(
+            err.response.data.Message || "Website with this name already exists"
+          );
+          // Keep form open to allow user to modify the name
+          return;
+        } else {
+          throw err; // rethrow if it's not the specific error we're handling
+        }
       }
-
-      toast.success(response.data.message);
-      fetchData();
-      fetchWebsiteList();
-
-      setWebsiteName("");
-      setUrl("");
-      setCurrentBalance("");
-      setShowAddWebsiteForm(false);
     } catch (error) {
       console.error("Error adding website:", error);
-      toast.error("Error adding website");
+      toast.error(error.response?.data?.Message || "Error adding website");
     }
 
     setLoading(false);

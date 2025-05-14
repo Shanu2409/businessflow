@@ -9,10 +9,27 @@ export async function POST(request) {
 
     const { username, password, allowed_banks } = await request.json();
 
+    // Convert username to uppercase for validation
+    const uppercaseUsername = username ? username.toUpperCase() : username;
+
+    // Check if the account already exists
+    const existingAccount = await Account.findOne({
+      username: uppercaseUsername,
+    });
+
+    if (existingAccount) {
+      return NextResponse.json(
+        { Message: "Account with this username already exists" },
+        { status: 400 }
+      );
+    }
+
     const newAccount = new Account({
-      username,
+      username: uppercaseUsername,
       password,
-      allowed_banks, // Default to an empty array
+      allowed_banks: allowed_banks
+        ? allowed_banks.map((bank) => bank.toUpperCase())
+        : [], // Ensure all bank names are uppercase
     });
 
     await newAccount.save();

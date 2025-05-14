@@ -26,7 +26,19 @@ export async function PUT(request, context) {
     // Convert bank_name to uppercase
     const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
     const uppercaseIFSC = ifsc_code ? ifsc_code.toUpperCase() : ifsc_code;
-    // Uncomment and modify the update operation as needed:
+
+    // Check if the name is changed and if the new name already exists
+    if (uppercaseBankName && uppercaseBankName !== name.toUpperCase()) {
+      const existingBank = await Bank.findOne({ bank_name: uppercaseBankName });
+      if (existingBank) {
+        return NextResponse.json(
+          { Message: "Bank with this name already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Proceed with update if no duplicate
     await Bank.updateOne(
       { bank_name: name },
       {

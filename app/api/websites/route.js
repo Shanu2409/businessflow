@@ -30,9 +30,8 @@ export async function POST(request) {
     });
 
     await newWebsite.save();
-
     return NextResponse.json({
-      Message: "Bank account created successfully",
+      Message: "Website created successfully",
     });
   } catch (error) {
     console.log(error);
