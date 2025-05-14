@@ -70,7 +70,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
     try {
       if (editData) {
         const bankNameChanged = initialBankName !== formData.bank_name;
@@ -83,26 +82,61 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         } else {
           updateData.bank_name = initialBankName;
         }
-
-        await axios.put(apiUrl, updateData);
-        toast.success("Bank details updated successfully");
+        try {
+          const response = await axios.put(apiUrl, updateData);
+          toast.success(
+            response?.data?.Message || "Bank details updated successfully"
+          );
+          fetchData();
+          resetForm();
+        } catch (err) {
+          if (err.response && err.response.status === 400) {
+            toast.error(
+              err.response.data.Message || "Bank with this name already exists"
+            );
+            setLoading(false);
+            return;
+          } else {
+            throw err;
+          }
+        }
       } else {
         let user;
         if (typeof window !== "undefined") {
           user = JSON.parse(sessionStorage.getItem("user") || "{}");
         }
-        await axios.post("/api/banks", {
-          ...formData,
-          created_by: user.username,
-        });
-        toast.success("Bank added successfully");
+
+        try {
+          const response = await axios.post("/api/banks", {
+            ...formData,
+            created_by: user.username,
+          });
+
+          toast.success(response.data.Message || "Bank added successfully");
+          fetchData();
+          resetForm();
+        } catch (err) {
+          // Check for specific error responses
+          if (err.response && err.response.status === 400) {
+            toast.error(
+              err.response.data.Message || "Bank with this name already exists"
+            );
+            // Keep the form open but clear loading state
+            setLoading(false);
+            return;
+          } else {
+            throw err; // rethrow if it's not the specific error we're handling
+          }
+        }
       }
 
       fetchData();
       resetForm();
     } catch (error) {
       console.error("Error processing bank:", error);
-      toast.error("Failed to process bank details");
+      toast.error(
+        error.response?.data?.Message || "Failed to process bank details"
+      );
     } finally {
       setLoading(false);
     }

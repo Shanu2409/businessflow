@@ -10,15 +10,19 @@ export async function POST(request) {
   try {
     await connection();
     const filters = await request.json();
-    const { reportType, startDate, endDate, groupBy, bankFilter, websiteFilter, userFilter, sortBy = "date", sortOrder = "desc" } = filters;
+    const { reportType, startDate, endDate, startTime, endTime, groupBy, bankFilter, websiteFilter, userFilter, sortBy = "date", sortOrder = "desc" } = filters;
 
     // Build date filter if date range is specified
     const dateFilter = {};
     if (startDate) {
-      dateFilter.createdAt = { $gte: new Date(startDate) };
+      // If startTime is provided, use it; otherwise default to start of day
+      const startDateTime = startTime ? `${startDate}T${startTime}:00` : `${startDate}T00:00:00`;
+      dateFilter.createdAt = { $gte: new Date(startDateTime) };
     }
     if (endDate) {
-      dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDate + "T23:59:59") };
+      // If endTime is provided, use it; otherwise default to end of day
+      const endDateTime = endTime ? `${endDate}T${endTime}:00` : `${endDate}T23:59:59`;
+      dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDateTime) };
     }
 
     // Switch based on report type
@@ -82,7 +86,9 @@ export async function POST(request) {
                   $cond: [{ $eq: ["$transaction_type", "Withdraw"] }, "$amount", 0]
                 }
               },
-              count: { $sum: 1 }
+              count: { $sum: 1 },
+              // Keep the first timestamp for each group for reference
+              createdAt: { $min: "$createdAt" }  // Using $min instead of $first
             }
           },
           { 
@@ -93,7 +99,9 @@ export async function POST(request) {
               depositAmount: 1,
               withdrawAmount: 1,
               netFlow: { $subtract: ["$depositAmount", "$withdrawAmount"] },
-              count: 1
+              count: 1,
+              // Include min and max timestamps for this group to show time information
+              createdAt: "$createdAt"  // No need for $first here, just pass through the value
             }
           },
           { 
@@ -222,9 +230,30 @@ export async function POST(request) {
             }
           },
           {
+            $addFields: {
+              dateForSort: { $toDate: { $concat: ["$_id", "T00:00:00Z"] } }
+            }  
+          },
+          {
+            $sort: { dateForSort: 1 }
+          },
+          {
+            $lookup: {
+              from: "transactions",
+              let: { date_string: "$_id" },
+              pipeline: [
+                { $match: { $expr: { $eq: [{ $dateToString: { format: dateFormat, date: "$createdAt" } }, "$$date_string"] } } },
+                { $sort: { createdAt: 1 } },
+                { $limit: 1 }
+              ],
+              as: "firstTransaction"
+            }
+          },
+          {
             $project: {
               _id: 0,
               date: "$_id",
+              createdAt: { $arrayElemAt: ["$firstTransaction.createdAt", 0] },
               depositAmount: {
                 $reduce: {
                   input: "$transactions",

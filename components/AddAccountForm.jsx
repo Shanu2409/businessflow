@@ -67,26 +67,35 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
     try {
-      const response = await axios.post("/api/accounts", {
-        username,
-        password,
-        allowed_banks: allowedBanks, // Send the allowed banks to the server
-      });
+      try {
+        const response = await axios.post("/api/accounts", {
+          username,
+          password,
+          allowed_banks: allowedBanks, // Send the allowed banks to the server
+        });
 
-      if (response.status === 200) {
-        toast.success("User added successfully.");
+        toast.success(response.data.Message || "User added successfully");
         fetchData();
         setUsername("");
         setPassword("");
         setShowAddAccountForm(false);
-      } else {
-        toast.error(response.data.message);
+      } catch (err) {
+        // Check for specific error responses
+        if (err.response && err.response.status === 400) {
+          toast.error(
+            err.response.data.Message ||
+              "Account with this username already exists"
+          );
+          // Keep the form open to allow the user to modify the username
+          return;
+        } else {
+          throw err; // rethrow if it's not the specific error we're handling
+        }
       }
     } catch (error) {
       console.error("Error adding user:", error);
-      toast.error("Failed to add user.");
+      toast.error(error.response?.data?.Message || "Failed to add user");
     }
 
     setLoading(false);

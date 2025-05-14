@@ -11,6 +11,7 @@ import {
   FiDollarSign,
   FiGlobe,
   FiDatabase,
+  FiPieChart,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 
@@ -30,6 +31,7 @@ const Navbar = () => {
     },
     { title: "USERS", link: "/user", icon: <FiUsers className="mr-2" /> },
     { title: "WEBSITES", link: "/website", icon: <FiGlobe className="mr-2" /> },
+    { title: "REPORTS", link: "/reports", icon: <FiPieChart className="mr-2" /> },
   ];
 
   const handleLogout = () => {

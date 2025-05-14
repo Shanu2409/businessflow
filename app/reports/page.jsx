@@ -38,6 +38,39 @@ ChartJS.register(
   Filler
 );
 
+// Helper function to format dates with time when available
+const formatDateWithPossibleTime = (dateString, createdAt) => {
+  // If neither parameter is provided
+  if (!dateString && !createdAt) return '-';
+
+  // If createdAt is available, format with time
+  if (createdAt) {
+    const date = new Date(createdAt);
+    if (isValid(date)) {
+      return format(date, 'yyyy-MM-dd HH:mm:ss');
+    }
+  }
+  
+  // If no dateString, return
+  if (!dateString) return '-';
+  
+  // If it's a ISO date string with time
+  if (typeof dateString === 'string' && dateString.includes('T')) {
+    const date = parseISO(dateString);
+    if (isValid(date)) {
+      return format(date, 'yyyy-MM-dd HH:mm:ss');
+    }
+  }
+  
+  // If date is a Date object
+  if (dateString instanceof Date && isValid(dateString)) {
+    return format(dateString, 'yyyy-MM-dd HH:mm:ss');
+  }
+  
+  // Otherwise, just return the date part
+  return typeof dateString === 'string' ? dateString.substring(0, 10) : String(dateString);
+};
+
 const ReportsPage = () => {
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('systemOverview');
@@ -46,6 +79,8 @@ const ReportsPage = () => {
   const [filters, setFilters] = useState({
     startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
+    startTime: '00:00',
+    endTime: '23:59',
     groupBy: 'day',
     bankFilter: '',
     websiteFilter: '',
@@ -176,7 +211,9 @@ const ReportsPage = () => {
     setFilters(prev => ({
       ...prev,
       startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
-      endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+      endDate: format(endOfMonth(today), 'yyyy-MM-dd'),
+      startTime: '00:00',
+      endTime: '23:59'
     }));
   };
 
@@ -210,8 +247,8 @@ const ReportsPage = () => {
         case 'userActivity': 
           dataToExport = reportData.data.map(user => ({
             ...user,
-            lastActivity: format(new Date(user.lastActivity), 'yyyy-MM-dd HH:mm'),
-            firstActivity: format(new Date(user.firstActivity), 'yyyy-MM-dd HH:mm'),
+            lastActivity: user.lastActivity ? format(new Date(user.lastActivity), 'yyyy-MM-dd HH:mm:ss') : '',
+            firstActivity: user.firstActivity ? format(new Date(user.firstActivity), 'yyyy-MM-dd HH:mm:ss') : '',
             daysActive: Math.round(user.daysActive)
           }));
           break;
@@ -549,6 +586,21 @@ const ReportsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-6">Transaction Summary</h2>
           
+          {/* Time filter notification */}
+          {(filters.startTime !== '00:00' || filters.endTime !== '23:59') && (
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-4">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-700 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-blue-700 font-medium">Time-based filtering active</p>
+                  <p className="text-xs text-blue-600">Showing transactions between {filters.startTime} and {filters.endTime}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Transaction Stats */}
             <div>
@@ -649,7 +701,7 @@ const ReportsPage = () => {
                       return (
                         <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="border border-gray-300 px-4 py-2">
-                            {tx?.date || tx?.label || '-'}
+                            {formatDateWithPossibleTime(tx?.date, tx?.createdAt) || tx?.label || '-'}
                           </td>
                           <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
                             {new Intl.NumberFormat('en-IN', { 
@@ -1086,6 +1138,21 @@ const ReportsPage = () => {
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-6">User Activity Report</h2>
         
+        {/* Time filter notification */}
+        {(filters.startTime !== '00:00' || filters.endTime !== '23:59') && (
+          <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-4">
+            <div className="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-700 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Time filter active: {filters.startTime} - {filters.endTime}</p>
+                <p className="text-xs text-blue-600">First and last activity times now show precise timestamps</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Chart */}
         <div className="mb-6" style={{ height: '400px' }}>
           <Bar data={chartData} options={userActivityOptions} />
@@ -1120,10 +1187,10 @@ const ReportsPage = () => {
                       }).format(user.totalAmount || 0)}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
-                      {user.firstActivity ? format(new Date(user.firstActivity), 'yyyy-MM-dd') : '-'}
+                      {user.firstActivity ? formatDateWithPossibleTime(null, user.firstActivity) : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
-                      {user.lastActivity ? format(new Date(user.lastActivity), 'yyyy-MM-dd') : '-'}
+                      {user.lastActivity ? formatDateWithPossibleTime(null, user.lastActivity) : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
                       {Math.round(user.daysActive) || 0}
@@ -1170,9 +1237,12 @@ const ReportsPage = () => {
       return <div className="p-6 text-center">No trend data found for the selected period</div>;
     }
 
+    // Check if our data has time information (for display purposes)
+    const hasTimeData = data.some(item => item.createdAt);
+    
     // Prepare data for the line chart
     const chartData = {
-      labels: data.map(item => typeof item.date === 'string' ? item.date.substring(0, 10) : item.label || ''),
+      labels: data.map(item => formatDateWithPossibleTime(item.date, item.createdAt) || item.label || ''),
       datasets: [
         {
           label: 'Deposits',
@@ -1214,6 +1284,33 @@ const ReportsPage = () => {
         mode: 'index',
         intersect: false,
       },
+      plugins: {
+        ...chartOptions.plugins,
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              // Use full date-time format when available
+              const dataPoint = data[context[0].dataIndex];
+              if (dataPoint && dataPoint.createdAt) {
+                return formatDateWithPossibleTime(null, dataPoint.createdAt);
+              }
+              return context[0].label;
+            },
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.parsed.y !== null) {
+                label += new Intl.NumberFormat('en-IN', { 
+                  style: 'currency', 
+                  currency: 'INR',
+                  maximumFractionDigits: 0
+                }).format(context.parsed.y);
+              }
+              return label;
+            }
+          }
+        }
+      },
       scales: {
         y: {
           title: {
@@ -1243,6 +1340,25 @@ const ReportsPage = () => {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-6">Transaction Trend Analysis</h2>
+        
+        {/* Time filter notification */}
+        {(filters.startTime !== '00:00' || filters.endTime !== '23:59') && (
+          <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-4">
+            <div className="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-700 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Time filtering active</p>
+                <p className="text-xs text-blue-600">Showing transactions between {filters.startTime} and {filters.endTime}</p>
+                <p className="text-xs text-blue-600 mt-1">{hasTimeData ? 
+                  "Hover over data points to see exact timestamps" : 
+                  "Group by 'day' for most precise time filtering results"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Chart */}
         <div className="mb-6" style={{ height: '400px' }}>
@@ -1311,9 +1427,7 @@ const ReportsPage = () => {
                 return (
                   <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="border border-gray-300 px-4 py-2">
-                      {item.date ? 
-                        (typeof item.date === 'string' ? item.date.substring(0, 10) : format(new Date(item.date), 'yyyy-MM-dd')) 
-                        : item.label || '-'}
+                      {formatDateWithPossibleTime(item.date, item.createdAt) || item.label || '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right text-green-600">
                       {new Intl.NumberFormat('en-IN', { 
@@ -1460,28 +1574,63 @@ const ReportsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Date Range */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                <div className="flex space-x-2 items-center">
-                  <input
-                    type="date"
-                    className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  />
-                  <span className="text-gray-500">to</span>
-                  <input
-                    type="date"
-                    className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  />
-                  <button 
-                    className="text-blue-500 hover:text-blue-700" 
-                    onClick={resetToCurrentMonth}
-                    title="Reset to current month"
-                  >
-                    <FaSync />
-                  </button>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date & Time Range</label>
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-2">
+                  <div className="flex items-start">
+                    <FaInfoCircle className="text-blue-700 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-blue-700 font-medium">Time filtering is now available!</p>
+                      <p className="text-xs text-blue-600 mt-1">Select both date and time for precise transaction filtering. Particularly helpful for high-volume transaction periods.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* From Date and Time */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">From:</label>
+                    <div className="flex space-x-2 items-center">
+                      <input
+                        type="date"
+                        className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+                        value={filters.startDate}
+                        onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                      />
+                      <input
+                        type="time"
+                        className="w-24 border border-gray-300 rounded-md p-2 text-sm"
+                        value={filters.startTime}
+                        onChange={(e) => handleFilterChange('startTime', e.target.value)}
+                        placeholder="00:00"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* To Date and Time */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">To:</label>
+                    <div className="flex space-x-2 items-center">
+                      <input
+                        type="date"
+                        className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+                        value={filters.endDate}
+                        onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                      />
+                      <input
+                        type="time"
+                        className="w-24 border border-gray-300 rounded-md p-2 text-sm"
+                        value={filters.endTime}
+                        onChange={(e) => handleFilterChange('endTime', e.target.value)}
+                        placeholder="23:59"
+                      />
+                      <button 
+                        className="bg-blue-100 hover:bg-blue-200 p-2 rounded text-blue-700" 
+                        onClick={resetToCurrentMonth}
+                        title="Reset to current month"
+                      >
+                        <FaSync />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1594,6 +1743,51 @@ const ReportsPage = () => {
                   </select>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Active Filters Indicators */}
+        {reportType !== 'systemOverview' && reportType !== 'balanceSummary' && (
+          <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Active Filters:</h3>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-blue-50 text-blue-800 border border-blue-200">
+                Date: {filters.startDate} to {filters.endDate}
+              </span>
+              {(filters.startTime !== '00:00' || filters.endTime !== '23:59') ? (
+                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-green-50 text-green-800 border border-green-200 font-medium">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Time Filter: {filters.startTime} to {filters.endTime}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-gray-50 text-gray-500 border border-gray-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  No Time Filter (All Day)
+                </span>
+              )}
+              {filters.bankFilter && (
+                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-purple-50 text-purple-800 border border-purple-200">
+                  Bank: {filters.bankFilter}
+                </span>
+              )}
+              {filters.websiteFilter && (
+                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-amber-50 text-amber-800 border border-amber-200">
+                  Website: {filters.websiteFilter}
+                </span>
+              )}
+              {filters.userFilter && (
+                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-red-50 text-red-800 border border-red-200">
+                  User: {filters.userFilter}
+                </span>
+              )}
+              <span className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-gray-50 text-gray-800 border border-gray-200">
+                Group by: {filters.groupBy}
+              </span>
             </div>
           </div>
         )}

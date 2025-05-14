@@ -24,12 +24,31 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { name } = context.params;
-    const { email, active } = await request.json();
+    const { email, active, username, website_name } = await request.json();
+
+    // If username is being changed, check if it already exists
+    if (username && username.toUpperCase() !== name.toUpperCase()) {
+      const existingUser = await UserModal.findOne({
+        username: username.toUpperCase(),
+      });
+
+      if (existingUser) {
+        return NextResponse.json(
+          { Message: "User with this username already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Prepare update data with uppercase conversion for relevant fields
+    const updateData = { email, active };
+    if (username) updateData.username = username.toUpperCase();
+    if (website_name) updateData.website_name = website_name.toUpperCase();
 
     // Ensure username exists before updating
     const updatedUser = await UserModal.findOneAndUpdate(
       { username: name },
-      { $set: { email, active } }
+      { $set: updateData }
     );
 
     if (!updatedUser) {

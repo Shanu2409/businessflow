@@ -13,9 +13,11 @@ export async function POST(request) {
       created_by,
       active,
       current_balance,
-    } = await request.json();
-
-    const existingUser = await UserModal.findOne({ username });
+    } = await request.json(); // Ensure username is uppercase for validation
+    const uppercaseUsername = username ? username.toUpperCase() : username;
+    const existingUser = await UserModal.findOne({
+      username: uppercaseUsername,
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -23,13 +25,12 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-
     const newWebsite = new UserModal({
-      username,
-      website_name,
+      username: uppercaseUsername,
+      website_name: website_name ? website_name.toUpperCase() : website_name,
       email,
       current_balance,
-      created_by,
+      created_by: created_by ? created_by.toUpperCase() : created_by,
       active,
     });
 

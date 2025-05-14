@@ -12,9 +12,11 @@ export async function POST(request) {
       current_balance,
       account_number,
       created_by,
-    } = await request.json();
-
-    const existingBank = await Bank.findOne({ bank_name });
+    } = await request.json(); // Ensure bank_name is uppercase for validation
+    const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
+    const existingBank = await Bank.findOne({
+      bank_name: uppercaseBankName,
+    });
 
     if (existingBank) {
       return NextResponse.json(
@@ -22,13 +24,12 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-
     const newBank = new Bank({
-      bank_name,
-      ifsc_code,
+      bank_name: uppercaseBankName,
+      ifsc_code: ifsc_code ? ifsc_code.toUpperCase() : ifsc_code,
       current_balance: parseFloat(current_balance),
       account_number: parseInt(account_number),
-      created_by,
+      created_by: created_by ? created_by.toUpperCase() : created_by,
     });
 
     await newBank.save();
