@@ -5,7 +5,6 @@ const accountUserSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    set: (value) => (value ? value.toUpperCase() : value),
   },
   password: { type: String, required: true },
   type: { type: String, default: "user" },
