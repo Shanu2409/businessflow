@@ -7,9 +7,13 @@ export async function POST(request) {
     await connection();
 
     const { website_name, url, current_balance, created_by } =
-      await request.json();
-
-    const existingWebsite = await Website.findOne({ website_name });
+      await request.json(); // Ensure website_name is uppercase for validation
+    const uppercaseWebsiteName = website_name
+      ? website_name.toUpperCase()
+      : website_name;
+    const existingWebsite = await Website.findOne({
+      website_name: uppercaseWebsiteName,
+    });
 
     if (existingWebsite) {
       return NextResponse.json(
@@ -17,13 +21,12 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-
     const newWebsite = new Website({
-      website_name,
+      website_name: uppercaseWebsiteName,
       url,
       current_balance: parseFloat(current_balance),
       history: ["+" + parseFloat(current_balance)],
-      created_by,
+      created_by: created_by ? created_by.toUpperCase() : created_by,
     });
 
     await newWebsite.save();

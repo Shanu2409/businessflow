@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 
 const websiteSchema = new mongoose.Schema({
-  website_name: { type: String, unique: true },
+  website_name: {
+    type: String,
+    unique: true,
+    set: (value) => (value ? value.toUpperCase() : value),
+  },
   url: { type: String },
   current_balance: { type: Number },
   history: { type: Array, default: [] }, // Array of Numbers

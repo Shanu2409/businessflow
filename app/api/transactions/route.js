@@ -17,13 +17,26 @@ export async function POST(request) {
       amount,
     } = await request.json();
 
+    // Ensure all names are uppercase for consistency
+    const uppercaseUsername = username ? username.toUpperCase() : username;
+    const uppercaseWebsiteName = website_name
+      ? website_name.toUpperCase()
+      : website_name;
+    const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
+    const uppercaseCreatedBy = created_by
+      ? created_by.toUpperCase()
+      : created_by;
+
     // Ensure amount is a number
     const numericAmount = Number(amount);
 
     // Fetch bank and website balances
-    const bank = await Bank.findOne({ bank_name }, { current_balance: 1 });
+    const bank = await Bank.findOne(
+      { bank_name: uppercaseBankName },
+      { current_balance: 1 }
+    );
     const website = await Website.findOne(
-      { website_name },
+      { website_name: uppercaseWebsiteName },
       { current_balance: 1 }
     );
 
@@ -34,7 +47,7 @@ export async function POST(request) {
     // Perform transaction updates
     if (transaction_type === "Deposit") {
       await Bank.updateOne(
-        { bank_name },
+        { bank_name: uppercaseBankName },
         {
           $inc: { current_balance: numericAmount },
           $set: { check: false }, // Corrected placement
@@ -43,13 +56,13 @@ export async function POST(request) {
       );
 
       await Website.updateOne(
-        { website_name },
+        { website_name: uppercaseWebsiteName },
         { $inc: { current_balance: -numericAmount } },
         { upsert: false }
       );
     } else if (transaction_type === "Withdraw") {
       await Bank.updateOne(
-        { bank_name },
+        { bank_name: uppercaseBankName },
         {
           $inc: { current_balance: -numericAmount },
           $set: { check: false }, // Corrected placement
@@ -58,7 +71,7 @@ export async function POST(request) {
       );
 
       await Website.updateOne(
-        { website_name },
+        { website_name: uppercaseWebsiteName },
         { $inc: { current_balance: numericAmount } },
         { upsert: false }
       );
@@ -77,16 +90,16 @@ export async function POST(request) {
 
     // Save transaction with calculated balances
     const newTransaction = new Transaction({
-      bank_name,
-      username,
-      website_name,
+      bank_name: uppercaseBankName,
+      username: uppercaseUsername,
+      website_name: uppercaseWebsiteName,
       transaction_type,
       old_bank_balance: bankBalance,
       effective_balance: newBankBalance, // Use calculated value
       old_website_balance: websiteBalance,
       new_website_balance: newWebsiteBalance, // Use calculated value
       amount: numericAmount,
-      created_by,
+      created_by: uppercaseCreatedBy,
     });
 
     await newTransaction.save();
@@ -114,28 +127,31 @@ export async function GET(request) {
 
     await connection();
 
+    // Convert search term to uppercase for consistent searching
+    const uppercaseSearch = search ? search.toUpperCase() : "";
+
     const query = {
       $or: [
-        { bank_name: { $regex: search } },
-        { website_name: { $regex: search } },
-        { username: { $regex: search } },
+        { bank_name: { $regex: uppercaseSearch } },
+        { website_name: { $regex: uppercaseSearch } },
+        { username: { $regex: uppercaseSearch } },
       ],
     };
 
     // Add date-time filtering if provided
     if (startDate) {
-      const startDateTime = startTime 
-        ? `${startDate}T${startTime}:00` 
+      const startDateTime = startTime
+        ? `${startDate}T${startTime}:00`
         : `${startDate}T00:00:00`;
       query.createdAt = { $gte: new Date(startDateTime) };
     }
-    
+
     if (endDate) {
-      const endDateTime = endTime 
-        ? `${endDate}T${endTime}:00` 
+      const endDateTime = endTime
+        ? `${endDate}T${endTime}:00`
         : `${endDate}T23:59:59`;
       query.createdAt = { ...query.createdAt, $lte: new Date(endDateTime) };
-    };
+    }
 
     // Get the total count of documents matching the query
     const totalData = await Transaction.countDocuments(query);
@@ -164,9 +180,17 @@ export async function PUT(request) {
 
     await connection();
 
+    // Convert values to uppercase for relevant fields
+    let valueToUpdate = value;
+    if (
+      ["bank_name", "username", "website_name", "created_by"].includes(field)
+    ) {
+      valueToUpdate = value.toUpperCase();
+    }
+
     const result = await Transaction.updateMany(
       { _id: tid },
-      { $set: { [field]: value } }
+      { $set: { [field]: valueToUpdate } }
     );
 
     return NextResponse.json({ Message: "Data updated successfully" });

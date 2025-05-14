@@ -18,10 +18,9 @@ export const DropdownMenu = ({
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
   const router = useRouter();
-
   // Filter options based on search input
   const filteredOptions = options.filter((option) =>
-    option.toLowerCase().startsWith(searchTerm.toLowerCase())
+    option.toUpperCase().startsWith(searchTerm.toUpperCase())
   );
 
   // Reset highlighted index when filtered options change
@@ -125,7 +124,7 @@ export const DropdownMenu = ({
             placeholder="Search..."
             className="w-full p-2 border-b border-gray-300 focus:outline-none text-sm"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
           />
           <div className="max-h-32 overflow-y-auto">

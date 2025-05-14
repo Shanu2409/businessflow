@@ -20,29 +20,33 @@ export async function DELETE(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connection();
-    // Await the params from the context.
+    await connection(); // Await the params from the context.
     const { name } = await context.params;
     const { account_number, url, website_name, current_balance, type } =
       await request.json();
     // Uncomment and modify the update operation as needed:
     console.log("type", type);
 
+    // Convert website_name to uppercase
+    const uppercaseWebsiteName = website_name
+      ? website_name.toUpperCase()
+      : website_name;
+
     // Construct the update object based on type
     const updateObject = type
       ? {
-          $push: { history: "+" + current_balance }, 
+          $push: { history: "+" + current_balance },
           $set: {
-            website_name,
+            website_name: uppercaseWebsiteName,
             account_number,
             current_balance,
             url,
           },
         }
       : {
-          $push: { history: "-" + current_balance }, 
+          $push: { history: "-" + current_balance },
           $set: {
-            website_name,
+            website_name: uppercaseWebsiteName,
             account_number,
             current_balance,
             url,
@@ -50,11 +54,9 @@ export async function PUT(request, context) {
         };
 
     // Update the document in MongoDB
-    await Website.updateOne(
-      { website_name: name },
-      updateObject,
-      { upsert: true }
-    );
+    await Website.updateOne({ website_name: name }, updateObject, {
+      upsert: true,
+    });
 
     return NextResponse.json({
       Message: "Website account updated successfully",

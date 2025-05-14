@@ -20,18 +20,20 @@ export async function DELETE(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connection();
-    // Await the params from the context.
+    await connection(); // Await the params from the context.
     const { name } = await context.params;
     const { account_number, ifsc_code, bank_name } = await request.json();
+    // Convert bank_name to uppercase
+    const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
+    const uppercaseIFSC = ifsc_code ? ifsc_code.toUpperCase() : ifsc_code;
     // Uncomment and modify the update operation as needed:
     await Bank.updateOne(
       { bank_name: name },
       {
         $set: {
           account_number,
-          ifsc_code,
-          bank_name,
+          ifsc_code: uppercaseIFSC,
+          bank_name: uppercaseBankName,
         },
       }
     );

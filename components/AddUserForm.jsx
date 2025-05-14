@@ -301,7 +301,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
               style={{ cursor: editData ? "not-allowed" : "default" }}
               aria-label="Username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toUpperCase())}
             />
           </div>
 
