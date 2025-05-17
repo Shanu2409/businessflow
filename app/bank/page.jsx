@@ -13,6 +13,7 @@ import {
   FaChevronRight,
   FaEdit,
   FaDownload,
+  FaTrash,
 } from "react-icons/fa";
 
 const PageContent = () => {
@@ -88,6 +89,38 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error exporting bank details:", error);
       toast.error("Failed to export bank details.");
+    }
+  };
+  
+  // Handle Delete Bank
+  const handleDeleteBank = async (bankName) => {
+    if (window.confirm(`Are you sure you want to delete ${bankName}?`)) {
+      setLoading(true);
+      try {
+        await axios.delete(`/api/banks/${bankName}`);
+        toast.success("Bank deleted successfully");
+        fetchBankData();
+      } catch (error) {
+        console.error("Error deleting bank:", error);
+        
+        // If error is due to transactions
+        if (error.response?.data?.Message?.includes("associated transactions") && user?.type === "admin") {
+          if (window.confirm(`This bank has associated transactions. Force delete anyway?`)) {
+            try {
+              await axios.delete(`/api/banks/${bankName}?force=true`);
+              toast.success("Bank force deleted successfully");
+              fetchBankData();
+            } catch (forceError) {
+              console.error("Error force deleting bank:", forceError);
+              toast.error(forceError.response?.data?.Message || "Failed to force delete bank");
+            }
+          }
+        } else {
+          toast.error(error.response?.data?.Message || "Failed to delete bank");
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -247,12 +280,22 @@ const PageContent = () => {
                         </td>
                         {user?.type === "admin" && (
                           <td className="border px-4 py-2">
-                            <button
-                              onClick={() => handleIsEdit(row)}
-                              className="text-blue-500"
-                            >
-                              <FaEdit />
-                            </button>
+                            <div className="flex space-x-3">
+                              <button
+                                onClick={() => handleIsEdit(row)}
+                                className="text-blue-500"
+                                title="Edit"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBank(row.bank_name)}
+                                className="text-red-500"
+                                title="Delete"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>

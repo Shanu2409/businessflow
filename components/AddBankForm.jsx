@@ -28,7 +28,12 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
   // Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    // If current_balance is empty, set it to "0"
+    if (name === "current_balance" && value === "") {
+      setFormData((prev) => ({ ...prev, [name]: "0" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    }
   };
 
   // Populate Form if Editing
@@ -38,7 +43,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         bank_name: editData.bank_name || "",
         account_number: editData.account_number || "",
         ifsc_code: editData.ifsc_code || "",
-        current_balance: editData.current_balance || "",
+        current_balance: editData.current_balance || "0",
       });
       setInitialBankName(editData.bank_name || "");
     }
@@ -50,7 +55,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
       bank_name: "",
       account_number: "",
       ifsc_code: "",
-      current_balance: "",
+      current_balance: "0",
     });
     setShowAddBankForm(false);
   };
