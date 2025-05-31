@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { username, password, allowed_banks } = await request.json();
+    const { username, password } = await request.json();
 
     // Convert username to uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
@@ -27,9 +27,6 @@ export async function POST(request) {
     const newAccount = new Account({
       username: uppercaseUsername,
       password,
-      allowed_banks: allowed_banks
-        ? allowed_banks.map((bank) => bank.toUpperCase())
-        : [], // Ensure all bank names are uppercase
     });
 
     await newAccount.save();

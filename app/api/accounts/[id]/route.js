@@ -24,12 +24,12 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { id } = context.params;
-    const { password, allowed_banks } = await request.json();
+    const { password } = await request.json();
 
     // Ensure username exists before updating
     const updatedUser = await Account.findOneAndUpdate(
       { username: id },
-      { $set: { password, allowed_banks } }
+      { $set: { password } }
     );
 
     if (!updatedUser) {

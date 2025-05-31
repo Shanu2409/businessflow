@@ -57,19 +57,7 @@ const AddTransactionForm = ({
   const fetchBankList = async () => {
     if (typeof window === "undefined") return;
 
-    const userRaw = sessionStorage.getItem("user");
-    if (!userRaw) return;
-
-    const user = JSON.parse(userRaw);
-    const isAdmin = user.type === "admin";
-
-    if (!isAdmin) {
-      const allowedBanks = user.allowed_banks || [];
-      setBankList(allowedBanks);
-      return;
-    }
-
-    // Admin: fetch all banks
+    // Always fetch all banks for all users
     try {
       const { data: responseData } = await axios.get(
         "/api/banks?onlyNames=true"
@@ -79,7 +67,7 @@ const AddTransactionForm = ({
       sessionStorage.setItem("banks", JSON.stringify(bankData));
       setBankList(bankData);
     } catch (error) {
-      console.error("Error fetching bank list for admin:", error);
+      console.error("Error fetching bank list:", error);
     }
   };
 
