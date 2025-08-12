@@ -32,6 +32,14 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   const itemsPerPage = 20;
 
@@ -82,6 +90,24 @@ const PageContent = () => {
     setShowAddUserForm(true);
   };
 
+  const handlePruneUsers = async () => {
+    if (!user || user?.type !== "admin") return;
+    if (
+      !confirm("This will delete ALL users. This cannot be undone. Continue?")
+    )
+      return;
+    setLoading(true);
+    try {
+      await axios.delete(`/api/users`);
+      toast.success("All users deleted");
+      fetchUserData();
+    } catch (error) {
+      toast.error(error?.response?.data?.Message || "Failed to prune users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Compute total pages
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
 
@@ -95,15 +121,27 @@ const PageContent = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               User Clients Details
             </h1>
-            <button
-              className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
-              onClick={() => {
-                setShowAddUserForm(!showAddUserForm);
-                setEditData(null);
-              }}
-            >
-              {showAddUserForm ? "Cancel" : "Add User"}
-            </button>
+            <div className="flex space-x-3">
+              <button
+                className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
+                onClick={() => {
+                  setShowAddUserForm(!showAddUserForm);
+                  setEditData(null);
+                }}
+              >
+                {showAddUserForm ? "Cancel" : "Add User"}
+              </button>
+              {user?.type === "admin" && (
+                <button
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                  onClick={handlePruneUsers}
+                  title="Delete ALL users"
+                >
+                  <FaTrash />
+                  <span>Prune All</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Add User Form */}
@@ -132,7 +170,9 @@ const PageContent = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             {data.length > 0 && (
               <div className="flex justify-between items-center mb-4">
-                <span>Total: {totalData} | Page {page} of {computedTotalPages}</span>
+                <span>
+                  Total: {totalData} | Page {page} of {computedTotalPages}
+                </span>
                 <div className="flex space-x-4">
                   <button
                     onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -173,14 +213,24 @@ const PageContent = () => {
                       <td className="border px-4 py-2">{row.username}</td>
                       <td className="border px-4 py-2">{row.website_name}</td>
                       <td className="border px-4 py-2">{row.email}</td>
-                      <td className="border px-4 py-2">{row.active ? "✅" : "❌"}</td>
-                      <td className="border px-4 py-2">{row.created_by}</td>
-                      <td className="border px-4 py-2">{new Date(row.createdAt).toLocaleString()}</td>
                       <td className="border px-4 py-2">
-                        <button onClick={() => handleIsEdit(row)} className="text-blue-500">
+                        {row.active ? "✅" : "❌"}
+                      </td>
+                      <td className="border px-4 py-2">{row.created_by}</td>
+                      <td className="border px-4 py-2">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <button
+                          onClick={() => handleIsEdit(row)}
+                          className="text-blue-500"
+                        >
                           <FaEdit />
                         </button>
-                        <button onClick={() => handleDelete(row._id)} className="text-red-500">
+                        <button
+                          onClick={() => handleDelete(row._id)}
+                          className="text-red-500"
+                        >
                           <FaTrash />
                         </button>
                       </td>
@@ -188,7 +238,9 @@ const PageContent = () => {
                   ))}
                 </tbody>
               </table>
-            ) : <p>No results found.</p>}
+            ) : (
+              <p>No results found.</p>
+            )}
           </div>
         </div>
       </div>
@@ -198,5 +250,9 @@ const PageContent = () => {
 };
 
 export default function Page() {
-  return <Suspense fallback={<div>Loading Users page...</div>}><PageContent /></Suspense>;
+  return (
+    <Suspense fallback={<div>Loading Users page...</div>}>
+      <PageContent />
+    </Suspense>
+  );
 }

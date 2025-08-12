@@ -38,12 +38,14 @@ const PageContent = () => {
   const [sortLabel, setSortLabel] = useState("");
   const [isBankEnabled, setIsBankEnabled] = useState(true);
   const router = useRouter();
+  const [adminUser, setAdminUser] = useState(null);
 
   // Get user from sessionStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = JSON.parse(sessionStorage.getItem("user"));
       setUser(userData);
+      setAdminUser(userData?.type === "admin" ? userData : null);
     }
   }, []);
 
@@ -96,6 +98,28 @@ const PageContent = () => {
   const toggleForm = () => {
     setShowTransactionForm((prev) => !prev);
     if (!showTransactionForm) setEditData(null);
+  };
+
+  const handlePruneTransactions = async () => {
+    if (!adminUser) return;
+    if (
+      !confirm(
+        "This will delete ALL transactions. This cannot be undone. Continue?"
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      await axios.delete(`/api/transactions`);
+      toast.success("All transactions deleted");
+      fetchTransactions();
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.Message || "Failed to prune transactions"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Format Data for Display
@@ -225,6 +249,15 @@ const PageContent = () => {
             >
               {showTransactionForm ? "Cancel" : "Add Transaction"}
             </button>
+            {adminUser && (
+              <button
+                className="ml-3 px-6 py-2 rounded-md font-semibold shadow transition duration-300 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handlePruneTransactions}
+                title="Delete ALL transactions"
+              >
+                <FaTrash className="inline mr-2" /> Prune All
+              </button>
+            )}
           </div>
 
           {/* Transaction Form */}

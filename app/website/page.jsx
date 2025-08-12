@@ -34,6 +34,14 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [history, setHistory] = useState([]);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -96,6 +104,49 @@ const PageContent = () => {
     }
   };
 
+  const handlePruneWebsites = async () => {
+    if (!user || user?.type !== "admin") return;
+    if (
+      !confirm(
+        "This will delete ALL websites. This cannot be undone. Continue?"
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      await axios.delete(`/api/websites`);
+      toast.success("All websites deleted");
+      fetchWebsiteData();
+    } catch (error) {
+      if (
+        error?.response?.status === 400 &&
+        error?.response?.data?.Message?.includes("transactions")
+      ) {
+        const proceed = confirm(
+          "There are transactions. Also delete ALL transactions and continue?"
+        );
+        if (proceed) {
+          try {
+            await axios.delete(`/api/websites?force=true`);
+            toast.success("All websites and transactions deleted");
+            fetchWebsiteData();
+          } catch (forceErr) {
+            toast.error(
+              forceErr?.response?.data?.Message ||
+                "Failed to force prune websites"
+            );
+          }
+        }
+      } else {
+        toast.error(
+          error?.response?.data?.Message || "Failed to prune websites"
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchWebsiteData();
   }, [search, page]);
@@ -132,6 +183,16 @@ const PageContent = () => {
                 <FaDownload />
                 <span>Export</span>
               </button>
+              {user?.type === "admin" && (
+                <button
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                  onClick={handlePruneWebsites}
+                  title="Delete ALL websites"
+                >
+                  <FaTrash />
+                  <span>Prune All</span>
+                </button>
+              )}
             </div>
           </div>
 

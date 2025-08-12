@@ -87,3 +87,47 @@ export async function GET(request) {
     return NextResponse.json({ Message: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Website = getWebsiteModel(conn);
+    const url = new URL(request.url);
+    const force = url.searchParams.get("force") === "true";
+
+    if (!force) {
+      const { getTransactionModel } = await import(
+        "@/models/factories/transaction"
+      );
+      const Transaction = getTransactionModel(conn);
+      const count = await Transaction.countDocuments({});
+      if (count > 0) {
+        return NextResponse.json(
+          {
+            Message: `Cannot prune websites while ${count} transactions exist. Use force=true to also delete transactions.`,
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      const { getTransactionModel } = await import(
+        "@/models/factories/transaction"
+      );
+      const Transaction = getTransactionModel(conn);
+      await Transaction.deleteMany({});
+    }
+
+    const result = await Website.deleteMany({});
+    return NextResponse.json({
+      Message: `Pruned websites: ${result.deletedCount}`,
+    });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ Message: error.message }, { status: 500 });
+  }
+}
