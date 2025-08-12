@@ -216,3 +216,21 @@ export async function PUT(request) {
     return NextResponse.json({ Message: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Transaction = getTransactionModel(conn);
+    const result = await Transaction.deleteMany({});
+    return NextResponse.json({
+      Message: `Pruned transactions: ${result.deletedCount}`,
+    });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ Message: error.message }, { status: 500 });
+  }
+}

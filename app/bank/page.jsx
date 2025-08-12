@@ -91,7 +91,49 @@ const PageContent = () => {
       toast.error("Failed to export bank details.");
     }
   };
-  
+
+  // Prune all banks (admin only) with optional force to remove transactions
+  const handlePruneBanks = async () => {
+    if (!user || user?.type !== "admin") return;
+    if (
+      !window.confirm(
+        "This will delete ALL banks. This action cannot be undone. Continue?"
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      await axios.delete(`/api/banks`);
+      toast.success("All banks deleted successfully");
+      fetchBankData();
+    } catch (error) {
+      // If blocked due to transactions, offer force delete
+      if (
+        error?.response?.status === 400 &&
+        error?.response?.data?.Message?.includes("transactions")
+      ) {
+        const proceed = window.confirm(
+          "There are existing transactions. Also delete ALL transactions and continue? This cannot be undone."
+        );
+        if (proceed) {
+          try {
+            await axios.delete(`/api/banks?force=true`);
+            toast.success("All banks and transactions deleted");
+            fetchBankData();
+          } catch (forceErr) {
+            toast.error(
+              forceErr?.response?.data?.Message || "Failed to force prune banks"
+            );
+          }
+        }
+      } else {
+        toast.error(error?.response?.data?.Message || "Failed to prune banks");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle Delete Bank
   const handleDeleteBank = async (bankName) => {
     if (window.confirm(`Are you sure you want to delete ${bankName}?`)) {
@@ -102,17 +144,27 @@ const PageContent = () => {
         fetchBankData();
       } catch (error) {
         console.error("Error deleting bank:", error);
-        
+
         // If error is due to transactions
-        if (error.response?.data?.Message?.includes("associated transactions") && user?.type === "admin") {
-          if (window.confirm(`This bank has associated transactions. Force delete anyway?`)) {
+        if (
+          error.response?.data?.Message?.includes("associated transactions") &&
+          user?.type === "admin"
+        ) {
+          if (
+            window.confirm(
+              `This bank has associated transactions. Force delete anyway?`
+            )
+          ) {
             try {
               await axios.delete(`/api/banks/${bankName}?force=true`);
               toast.success("Bank force deleted successfully");
               fetchBankData();
             } catch (forceError) {
               console.error("Error force deleting bank:", forceError);
-              toast.error(forceError.response?.data?.Message || "Failed to force delete bank");
+              toast.error(
+                forceError.response?.data?.Message ||
+                  "Failed to force delete bank"
+              );
             }
           }
         } else {
@@ -152,6 +204,16 @@ const PageContent = () => {
                 <FaDownload />
                 <span>Export</span>
               </button>
+              {user?.type === "admin" && (
+                <button
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                  onClick={handlePruneBanks}
+                  title="Delete ALL banks"
+                >
+                  <FaTrash />
+                  <span>Prune All</span>
+                </button>
+              )}
             </div>
           </div>
 
