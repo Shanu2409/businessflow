@@ -1,17 +1,25 @@
-import connection from "@/lib/mongodb";
-import UserModal from "@/models/userModal";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getUserClientModel } from "@/models/factories/userModal";
 import { NextResponse, NextRequest } from "next/server";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const UserModal = getUserClientModel(conn);
 
     const {
       username,
       website_name,
       email,
       created_by,
-      active,
+      active: userActive,
       current_balance,
     } = await request.json(); // Ensure username is uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
@@ -31,7 +39,7 @@ export async function POST(request) {
       email,
       current_balance,
       created_by: created_by ? created_by.toUpperCase() : created_by,
-      active,
+      active: userActive,
     });
 
     await newWebsite.save();
@@ -53,7 +61,9 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || 1);
     const onlyNames = searchParams.get("onlyNames");
 
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const UserModal = getUserClientModel(conn);
 
     if (onlyNames === "true") {
       const userNames = await UserModal.find(

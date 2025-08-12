@@ -1,11 +1,15 @@
-import connection from "@/lib/mongodb";
-import Bank from "@/models/bank";
+import { getActiveDb } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getBankModel } from "@/models/factories/bank";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+export const runtime = "nodejs";
 
 export async function GET(request) {
   try {
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
 
     // Fetch bank data (excluding _id and __v)
     const banks = await Bank.find().select(

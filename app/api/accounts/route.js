@@ -1,11 +1,19 @@
-import connection from "@/lib/mongodb";
-import Account from "@/models/accountUser";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getAccountModel } from "@/models/factories/accountUser";
 import { all } from "axios";
 import { NextResponse, NextRequest } from "next/server";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Account = getAccountModel(conn);
 
     const { username, password } = await request.json();
 
@@ -47,7 +55,9 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
 
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Account = getAccountModel(conn);
 
     const query = {
       type: "user", // Ensuring only users are fetched

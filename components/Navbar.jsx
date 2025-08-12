@@ -12,6 +12,7 @@ import {
   FiGlobe,
   FiDatabase,
   FiPieChart,
+  FiSettings,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 
@@ -31,7 +32,11 @@ const Navbar = () => {
     },
     { title: "USERS", link: "/user", icon: <FiUsers className="mr-2" /> },
     { title: "WEBSITES", link: "/website", icon: <FiGlobe className="mr-2" /> },
-    { title: "REPORTS", link: "/reports", icon: <FiPieChart className="mr-2" /> },
+    {
+      title: "REPORTS",
+      link: "/reports",
+      icon: <FiPieChart className="mr-2" />,
+    },
   ];
 
   const handleLogout = () => {
@@ -85,6 +90,15 @@ const Navbar = () => {
               {item.title}
             </button>
           ))}
+          {user?.type === "admin" && (
+            <button
+              onClick={() => router.push("/admin/db-switch")}
+              className="flex items-center ml-2 px-3 py-2 rounded-md bg-accent text-primary hover:bg-white hover:text-primary border border-accent transition duration-300 text-sm font-semibold shadow-sm"
+              title="Switch active database"
+            >
+              <FiSettings className="mr-2" /> DB SWITCH
+            </button>
+          )}
           <div className="pl-4 ml-4 border-l border-secondary flex items-center">
             <img
               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -139,6 +153,17 @@ const Navbar = () => {
                   {item.title}
                 </button>
               ))}
+              {user?.type === "admin" && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    router.push("/admin/db-switch");
+                  }}
+                  className="flex items-center w-full px-4 py-2 mt-1 text-primary bg-accent/20 hover:bg-accent/30 rounded-md transition duration-300 mb-1"
+                >
+                  <FiSettings className="mr-2" /> DB SWITCH
+                </button>
+              )}
               <button
                 className="flex items-center w-full px-4 py-2 mt-2 text-white bg-primary rounded-md hover:bg-secondary transition duration-300"
                 onClick={() => {

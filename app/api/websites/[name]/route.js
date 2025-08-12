@@ -1,10 +1,17 @@
-import connection from "@/lib/mongodb";
-import Website from "@/models/website";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getWebsiteModel } from "@/models/factories/website";
 import { NextResponse } from "next/server";
+export const runtime = "nodejs";
 
 export async function DELETE(request, context) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Website = getWebsiteModel(conn);
     // Await the params from the context.
     const { name } = await context.params;
     // Uncomment and modify the delete operation as needed:
@@ -20,7 +27,13 @@ export async function DELETE(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connection(); // Await the params from the context.
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Website = getWebsiteModel(conn);
+    // Await the params from the context.
     const { name } = await context.params;
     const { account_number, url, website_name, current_balance, type } =
       await request.json();
