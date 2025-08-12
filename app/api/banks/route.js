@@ -1,10 +1,21 @@
-import connection from "@/lib/mongodb";
-import Bank from "@/models/bank";
+// Migrated to active DB pattern
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getBankModel } from "@/models/factories/bank";
 import { NextResponse, NextRequest } from "next/server";
+
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    // Maintenance gate for writes
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
 
     const {
       bank_name,
@@ -52,7 +63,9 @@ export async function GET(request) {
     const sort = searchParams.get("sort") || "createdAt";
     const onlyNames = searchParams.get("onlyNames");
 
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
 
     if (onlyNames === "true") {
       const allNames = await Bank.distinct("bank_name");
@@ -90,7 +103,13 @@ export async function PUT(request) {
     const value = searchParams.get("value") || "";
     const bank_name = searchParams.get("bank_name") || "";
 
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
 
     const result = await Bank.updateOne(
       { bank_name: bank_name },

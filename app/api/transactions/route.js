@@ -1,12 +1,22 @@
-import connection from "@/lib/mongodb";
-import Bank from "@/models/bank";
-import Transaction from "@/models/transaction";
-import Website from "@/models/website";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getBankModel } from "@/models/factories/bank";
+import { getTransactionModel } from "@/models/factories/transaction";
+import { getWebsiteModel } from "@/models/factories/website";
 import { NextResponse, NextRequest } from "next/server";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
+    const Website = getWebsiteModel(conn);
+    const Transaction = getTransactionModel(conn);
 
     const {
       username,
@@ -125,7 +135,9 @@ export async function GET(request) {
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
 
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Transaction = getTransactionModel(conn);
 
     // Convert search term to uppercase for consistent searching
     const uppercaseSearch = search ? search.toUpperCase() : "";
@@ -178,7 +190,12 @@ export async function PUT(request) {
     const value = searchParams.get("value") || "";
     const tid = searchParams.get("tid") || "";
 
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Transaction = getTransactionModel(conn);
 
     // Convert values to uppercase for relevant fields
     let valueToUpdate = value;

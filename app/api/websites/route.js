@@ -1,10 +1,18 @@
-import connection from "@/lib/mongodb";
-import Website from "@/models/website";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getWebsiteModel } from "@/models/factories/website";
 import { NextResponse, NextRequest } from "next/server";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Website = getWebsiteModel(conn);
 
     const { website_name, url, current_balance, created_by } =
       await request.json(); // Ensure website_name is uppercase for validation
@@ -47,7 +55,9 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || 1);
     const onlyNames = searchParams.get("onlyNames");
 
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Website = getWebsiteModel(conn);
 
     if (onlyNames === "true") {
       const allNames = await Website.distinct("website_name");

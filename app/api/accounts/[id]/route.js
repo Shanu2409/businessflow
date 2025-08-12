@@ -1,10 +1,17 @@
-import connection from "@/lib/mongodb";
-import Account from "@/models/accountUser";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getAccountModel } from "@/models/factories/accountUser";
 import { NextResponse } from "next/server";
+export const runtime = "nodejs";
 
 export async function DELETE(request, context) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Account = getAccountModel(conn);
     // Await the params from the context.
     const { id } = await context.params;
     // Uncomment and modify the delete operation as needed:
@@ -20,7 +27,12 @@ export async function DELETE(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Account = getAccountModel(conn);
 
     // Extract params & body
     const { id } = context.params;

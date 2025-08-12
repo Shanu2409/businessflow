@@ -1,19 +1,20 @@
-import connection from "@/lib/mongodb";
-import Account from "@/models/accountUser";
+import { getActiveDb } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getAccountModel } from "@/models/factories/accountUser";
 import { NextResponse, NextRequest } from "next/server";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    await connection();
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Account = getAccountModel(conn);
 
     const { username, password } = await request.json();
 
     console.log("username", username);
 
-    const user = await Account.findOne({
-      username: username,
-      password,
-    });
+    const user = await Account.findOne({ username: username, password });
 
     if (!user) {
       return NextResponse.json({ Message: "Not found" }, { status: 400 });

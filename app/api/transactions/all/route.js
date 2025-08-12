@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import connection from "@/lib/mongodb";
-import Transaction from "@/models/transaction";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getTransactionModel } from "@/models/factories/transaction";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
@@ -30,7 +32,12 @@ export async function POST(request) {
       );
     }
 
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Transaction = getTransactionModel(conn);
 
     // Update all documents that match the IDs in the list
     const result = await Transaction.updateMany(

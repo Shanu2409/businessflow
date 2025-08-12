@@ -1,20 +1,32 @@
-import connection from "@/lib/mongodb";
-import Transaction from "@/models/transaction";
-import Bank from "@/models/bank";
-import Website from "@/models/website";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getTransactionModel } from "@/models/factories/transaction";
+import { getBankModel } from "@/models/factories/bank";
+import { getWebsiteModel } from "@/models/factories/website";
 import { NextResponse } from "next/server";
+export const runtime = "nodejs";
 
 export async function DELETE(request, context) {
   try {
-    await connection();
-    
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Transaction = getTransactionModel(conn);
+    const Bank = getBankModel(conn);
+    const Website = getWebsiteModel(conn);
+
     // Get transaction ID from params
     const { tid } = context.params;
 
     // Fetch the transaction details before deleting
     const transaction = await Transaction.findById(tid);
     if (!transaction) {
-      return NextResponse.json({ Message: "Transaction not found" }, { status: 404 });
+      return NextResponse.json(
+        { Message: "Transaction not found" },
+        { status: 404 }
+      );
     }
 
     const { bank_name, website_name, transaction_type, amount } = transaction;

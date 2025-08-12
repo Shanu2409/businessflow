@@ -1,45 +1,59 @@
-import connection from "@/lib/mongodb";
-import Bank from "@/models/bank";
-import mongoose from "mongoose";
+import { getActiveDb, isMaintenance } from "@/lib/db/control";
+import { getConn } from "@/lib/db/active";
+import { getBankModel } from "@/models/factories/bank";
+import { getTransactionModel } from "@/models/factories/transaction";
 import { NextResponse } from "next/server";
+export const runtime = "nodejs";
 
 export async function DELETE(request, context) {
   try {
-    await connection();
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
     // Get params from context
     const { name } = context.params;
-    
+
     // Check if force delete is requested
     const url = new URL(request.url);
-    const forceDelete = url.searchParams.get('force') === 'true';
-    
+    const forceDelete = url.searchParams.get("force") === "true";
+
     // Import Transaction model at the top level to prevent circular dependencies
-    const Transaction = mongoose.models.transactions || 
-      require('@/models/transaction').default;
-    
+    const Transaction = getTransactionModel(conn);
+
     // Check if any transactions reference this bank (unless force delete)
     if (!forceDelete) {
-      const transactionsCount = await Transaction.countDocuments({ bank_name: name });
-      
+      const transactionsCount = await Transaction.countDocuments({
+        bank_name: name,
+      });
+
       if (transactionsCount > 0) {
-        return NextResponse.json({
-          Message: `Cannot delete bank - it has ${transactionsCount} associated transactions`
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            Message: `Cannot delete bank - it has ${transactionsCount} associated transactions`,
+          },
+          { status: 400 }
+        );
       }
     }
-    
+
     // Delete the bank
     const result = await Bank.deleteOne({ bank_name: name });
-    
+
     if (result.deletedCount === 0) {
-      return NextResponse.json({
-        Message: "Bank not found"
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          Message: "Bank not found",
+        },
+        { status: 404 }
+      );
     }
-    
+
     return NextResponse.json({
-      Message: forceDelete 
-        ? `Bank account force deleted successfully` 
+      Message: forceDelete
+        ? `Bank account force deleted successfully`
         : `Bank account deleted successfully`,
     });
   } catch (error) {
@@ -50,9 +64,16 @@ export async function DELETE(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connection(); // Await the params from the context.
+    if (await isMaintenance()) {
+      return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
+    }
+    const active = await getActiveDb();
+    const conn = await getConn(active);
+    const Bank = getBankModel(conn);
+    // Await the params from the context.
     const { name } = await context.params;
-    const { account_number, ifsc_code, bank_name, current_balance } = await request.json();
+    const { account_number, ifsc_code, bank_name, current_balance } =
+      await request.json();
     // Convert bank_name to uppercase
     const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
     const uppercaseIFSC = ifsc_code ? ifsc_code.toUpperCase() : ifsc_code;
