@@ -9,8 +9,8 @@ export async function DELETE(request, context) {
     if (await isMaintenance()) {
       return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
     }
-    const active = await getActiveDb();
-    const conn = await getConn(active);
+    const activeDb = await getActiveDb();
+    const conn = await getConn(activeDb);
     const UserModal = getUserClientModel(conn);
     // Await the params from the context.
     const { name } = await context.params;
@@ -30,8 +30,8 @@ export async function PUT(request, context) {
     if (await isMaintenance()) {
       return NextResponse.json({ Message: "Maintenance" }, { status: 503 });
     }
-    const active = await getActiveDb();
-    const conn = await getConn(active);
+    const activeDb = await getActiveDb();
+    const conn = await getConn(activeDb);
     const UserModal = getUserClientModel(conn);
 
     // Extract params & body
