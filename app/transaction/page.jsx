@@ -35,6 +35,8 @@ const PageContent = () => {
   const [user, setUser] = useState(null);
   const [selectAllCheck, setSelectAllCheck] = useState(false);
   const [selectAllReCheck, setSelectAllReCheck] = useState(false);
+  const [sortLabel, setSortLabel] = useState("");
+  const [isBankEnabled, setIsBankEnabled] = useState(true);
   const router = useRouter();
 
   // Get user from sessionStorage
@@ -45,25 +47,13 @@ const PageContent = () => {
     }
   }, []);
 
-  const fetchBankList = async () => {
-    try {
-      const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true`
-      );
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("banks", JSON.stringify(responseData?.data));
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
-
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/transactions?search=${search}&page=${page}&limit=20`
+        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}&group=${user.group}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -71,7 +61,7 @@ const PageContent = () => {
       toast.error("Failed to load transactions.");
     }
     setLoading(false);
-  }, [search, page]);
+  }, [search, page, sortLabel, user]);
 
   // Update useEffect to listen for debounced search changes
   useEffect(() => {
@@ -81,25 +71,47 @@ const PageContent = () => {
   // Fetch data on mount and when dependencies change
   useEffect(() => {
     fetchTransactions();
-    fetchBankList(); // Also fetch bank list on component mount
   }, [fetchTransactions]);
+
+  // Fetch banks, users, websites for dropdowns
+  useEffect(() => {
+    if (!user) return;
+    const fetchDropdownData = async () => {
+      try {
+        const [banksRes, usersRes, websitesRes] = await Promise.all([
+          axios.get(`/api/banks?onlyNames=true&group=${user.group}`),
+          axios.get(`/api/users?onlyNames=true&group=${user.group}`),
+          axios.get(`/api/websites?onlyNames=true&group=${user.group}`),
+        ]);
+        sessionStorage.setItem("banks", JSON.stringify(banksRes.data.data));
+        sessionStorage.setItem("users", JSON.stringify(usersRes.data.data));
+        sessionStorage.setItem(
+          "websites",
+          JSON.stringify(websitesRes.data.data)
+        );
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+      }
+    };
+    fetchDropdownData();
+  }, [user]);
 
   // Ensure search value updates but doesn't immediately trigger fetch
   const handleSearchChange = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setSearchValue(value);
     // Removed the immediate setSearch call; now handled by the debounced effect
   };
 
   // Delete Transaction
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this transaction?")) {
+    if (confirm("Are you sure you want to delete this flow?")) {
       try {
-        await axios.delete(`/api/transactions/${id}`);
-        toast.success("Transaction deleted.");
+        await axios.delete(`/api/transactions/${id}?group=${user.group}`);
+        toast.success("Flow deleted.");
         fetchTransactions();
       } catch (error) {
-        toast.error("Failed to delete transaction.");
+        toast.error("Failed to delete flow.");
       }
     }
   };
@@ -123,7 +135,7 @@ const PageContent = () => {
       }).format(new Date(entry));
     }
     if (key === "current_balance" && typeof entry === "number") {
-      return `₹ ${entry.toLocaleString("en-IN")}`;
+      return `${entry.toLocaleString("en-IN")}`;
     }
     return entry;
   };
@@ -210,8 +222,6 @@ const PageContent = () => {
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
   const currentRows = data; // Since API already returns paginated data
 
-  
-
   // Compute Columns
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
 
@@ -227,7 +237,7 @@ const PageContent = () => {
             }`}
           >
             <h1 className="text-3xl font-semibold text-gray-800 transition-all duration-300">
-              {showTransactionForm ? "Add New Transaction" : "Transactions"}
+              {showTransactionForm ? "Add New Flow" : "Flows"}
             </h1>
             <button
               className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${
@@ -237,7 +247,7 @@ const PageContent = () => {
               }`}
               onClick={toggleForm}
             >
-              {showTransactionForm ? "Cancel" : "Add Transaction"}
+              {showTransactionForm ? "Cancel" : "Add Flow"}
             </button>
           </div>
 
@@ -254,8 +264,9 @@ const PageContent = () => {
         </div>
 
         {/* Filter & Sorting Sidebar */}
-        <div className="w-full mt-4">
-          <div className="p-4 bg-white rounded-lg shadow-md">
+        <div className="flex flex-col md:flex-row w-full mt-4 space-y-4 md:space-y-0 md:space-x-4">
+          {/* Filter & Search Section */}
+          <div className="md:w-3/4 w-full p-4 bg-white rounded-lg shadow-md">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="flex items-center w-full mb-4"
@@ -267,19 +278,65 @@ const PageContent = () => {
               )}
               <span className="text-lg font-semibold">Filter & Search</span>
             </button>
+
             {isFilterOpen && (
               <input
                 type="text"
                 placeholder="Search transactions..."
                 value={searchValue}
-                onChange={handleSearchChange} // ✅ Dynamic search update
+                onChange={handleSearchChange}
                 className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
               />
             )}
           </div>
+
+          {/* Bank & Website Toggle Switch */}
+          <div className="md:w-1/4 w-full bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-center md:text-left">
+              Select Mode
+            </h2>
+            <div className="flex justify-center md:justify-start items-center space-x-4">
+              {/* Label for Website (OFF State) */}
+              <span
+                className={`font-semibold ${
+                  !isBankEnabled ? "text-blue-600" : "text-gray-500"
+                }`}
+              >
+                Website
+              </span>
+
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isBankEnabled}
+                  onChange={() => {
+                    setIsBankEnabled((prev) => !prev);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-all relative">
+                  <div
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
+                      isBankEnabled ? "translate-x-7" : ""
+                    }`}
+                  ></div>
+                </div>
+              </label>
+
+              {/* Label for Bank (ON State) */}
+              <span
+                className={`font-semibold ${
+                  isBankEnabled ? "text-green-600" : "text-gray-500"
+                }`}
+              >
+                BK
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Flows Table */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="w-full overflow-x-auto">
             {/* Pagination Controls */}
@@ -313,6 +370,9 @@ const PageContent = () => {
               <thead className="text-left text-white bg-primary">
                 <tr>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                    Sr. No.
+                  </th>
+                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Check
                     <div className="mt-1">
                       <input
@@ -336,38 +396,94 @@ const PageContent = () => {
                       <span className="text-xs">All</span>
                     </div>
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "username" ? "-username" : "username"
+                      )
+                    }
+                  >
                     User
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "website_name"
+                          ? "-website_name"
+                          : "website_name"
+                      )
+                    }
+                  >
                     Website
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                    Bank
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "bank_name" ? "-bank_name" : "bank_name"
+                      )
+                    }
+                  >
+                    BK
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "created_by" ? "-created_by" : "created_by"
+                      )
+                    }
+                  >
                     Created By
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                    Group
+                  </th>
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "transaction_type"
+                          ? "-transaction_type"
+                          : "transaction_type"
+                      )
+                    }
+                  >
                     Type
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Current Balance
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "createdAt" ? "-createdAt" : "createdAt"
+                      )
+                    }
+                  >
                     Amount
                   </th>
                   <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     Effective Balance
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  <th
+                    className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                    onClick={() =>
+                      setSortLabel((prev) =>
+                        prev === "amount" ? "-amount" : "amount"
+                      )
+                    }
+                  >
                     Created On
                   </th>
-                  {user?.type === "admin" && (
+                  {/* {user?.type === "admin" && (
                     <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                       ACTIONS
                     </th>
-                  )}
+                  )} */}
                 </tr>
               </thead>
               <tbody>
@@ -382,11 +498,19 @@ const PageContent = () => {
                           ? "bg-yellow-100"
                           : row.re_check == "true"
                           ? "text-gray-800 bg-gray-100"
+                          : isBankEnabled
+                          ? row.transaction_type === "Deposit"
+                            ? "text-green-800 bg-green-100"
+                            : "text-red-800 bg-red-100"
                           : row.transaction_type === "Deposit"
-                          ? "text-green-800 bg-green-100"
-                          : "text-red-800 bg-red-100"
+                          ? "text-red-800 bg-red-100"
+                          : "text-green-800 bg-green-100"
                       }`}
                     >
+                      <td className="px-4 py-2 border border-gray-600 text-center">
+                        {rowIndex + 1 + (page - 1) * itemsPerPage}
+                      </td>
+
                       <td className="px-4 py-2 border border-gray-600 text-center">
                         <input
                           type="checkbox"
@@ -430,18 +554,40 @@ const PageContent = () => {
                         {row.created_by}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        {row.transaction_type}
+                        {row.group}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.old_bank_balance).toLocaleString("en-IN")}
+                        {isBankEnabled
+                          ? row.transaction_type
+                          : row.transaction_type === "Deposit"
+                          ? "Withdraw"
+                          : "Deposit"}
                       </td>
+                      {isBankEnabled ? (
+                        <td className="px-4 py-2 border border-gray-600">
+                          {Number(row.old_bank_balance).toLocaleString("en-IN")}
+                        </td>
+                      ) : (
+                        <td className="px-4 py-2 border border-gray-600">
+                          {Number(row.old_website_balance).toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.amount).toLocaleString("en-IN")}
+                        {Number(row.amount).toLocaleString("en-IN")}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        ₹{" "}
-                        {Number(row.effective_balance).toLocaleString("en-IN")}
-                      </td>
+                      {
+                        <td className="px-4 py-2 border border-gray-600">
+                          {isBankEnabled
+                            ? Number(row.effective_balance).toLocaleString(
+                                "en-IN"
+                              )
+                            : Number(row.new_website_balance).toLocaleString(
+                                "en-IN"
+                              )}
+                        </td>
+                      }
                       <td className="px-4 py-2 border border-gray-600">
                         {new Intl.DateTimeFormat("en-IN", {
                           year: "numeric",
@@ -451,14 +597,14 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row.createdAt))}
                       </td>
-                      {user?.type === "admin" && (
+                      {/* {user?.type === "admin" && (
                         <td className="px-4 py-2 border border-gray-600 text-center">
-                          {/* <button
+                          <button
                           onClick={() => handleEdit(row)}
                           className="text-blue-500 mr-2"
                         >
                           <FaEdit />
-                        </button> */}
+                        </button>
                           <button
                             onClick={() => handleDelete(row._id)}
                             className="text-red-500"
@@ -466,7 +612,7 @@ const PageContent = () => {
                             <FaTrash />
                           </button>
                         </td>
-                      )}
+                      )} */}
                     </tr>
                   ))
                 ) : (

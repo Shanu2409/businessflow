@@ -8,7 +8,12 @@ export async function POST(request) {
 
     const { username, password } = await request.json();
 
-    const user = await Account.findOne({ username, password });
+    console.log("username", username);
+
+    const user = await Account.findOne({
+      username: username,
+      password,
+    });
 
     if (!user) {
       return NextResponse.json({ Message: "Not found" }, { status: 400 });

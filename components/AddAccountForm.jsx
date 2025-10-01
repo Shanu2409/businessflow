@@ -5,26 +5,50 @@ import React, { useEffect, useState } from "react";
 import { FaUser, FaLock } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FullScreenLoader from "./FullScreenLoader";
+import BankDropdown from "./BankDropdown";
 
 const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // Password visibility toggle
   const [loading, setLoading] = useState(false);
+  const [bankList, setBankList] = useState([]);
+  const [allowedBanks, setAllowedBanks] = useState([]); // State to manage allowed banks
 
   useEffect(() => {
+    fetchBankList();
     if (editData) {
       setUsername(editData.username);
-      setPassword(editData.password)
+      setPassword(editData.password);
+      setAllowedBanks(editData.allowed_banks || []); // Set allowed banks if editing
     }
   }, [editData]);
 
+  const fetchBankList = async () => {
+    try {
+      const { data: responseData } = await axios.get(
+        `/api/banks?onlyNames=true`
+      );
+      setBankList(responseData?.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
   const handleEdit = async (data) => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
-      const response = await axios.put(`/api/accounts/${data.username}`, {
-        password : data.password
-      });
+      const response = await axios.put(
+        `/api/accounts/${data.username}?group=${user.group}`,
+        {
+          password: data.password,
+          allowed_banks: allowedBanks, // Send the allowed banks to the server
+        }
+      );
       toast.success(response?.data?.message);
       fetchData();
     } catch (error) {
@@ -37,7 +61,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!username || !password) {
+    if (!username || !password || allowedBanks.length === 0) {
       toast.error("Please fill all fields.");
       return;
     }
@@ -50,22 +74,39 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
-      const response = await axios.post("/api/accounts", { username, password });
+      try {
+        const response = await axios.post("/api/accounts", {
+          username,
+          password,
+          allowed_banks: allowedBanks, // Send the allowed banks to the server
+          group: user.group,
+        });
 
-      if (response.status === 200) {
-        toast.success("User added successfully.");
+        toast.success(response.data.Message || "User added successfully");
         fetchData();
         setUsername("");
         setPassword("");
         setShowAddAccountForm(false);
-      } else {
-        toast.error(response.data.message);
+      } catch (err) {
+        // Check for specific error responses
+        if (err.response && err.response.status === 400) {
+          toast.error(
+            err.response.data.Message || "ac with this username already exists"
+          );
+          // Keep the form open to allow the user to modify the username
+          return;
+        } else {
+          throw err; // rethrow if it's not the specific error we're handling
+        }
       }
     } catch (error) {
       console.error("Error adding user:", error);
-      toast.error("Failed to add user.");
+      toast.error(error.response?.data?.Message || "Failed to add user");
     }
 
     setLoading(false);
@@ -92,7 +133,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
               style={{ cursor: editData ? "not-allowed" : "default" }}
               aria-label="Username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toUpperCase())}
             />
           </div>
 
@@ -116,8 +157,22 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
             </button>
           </div>
 
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Allowed Banks :
+            </label>
+            {/* Bank Dropdown Component */}
+
+            <BankDropdown
+              bankList={bankList}
+              allowedBanks={allowedBanks}
+              setAllowedBanks={setAllowedBanks}
+            />
+          </div>
+
           <div className="flex items-center justify-center">
             <button
+              disabled={!username || !password || allowedBanks.length === 0}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >

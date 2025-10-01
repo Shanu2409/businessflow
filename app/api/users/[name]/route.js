@@ -7,8 +7,10 @@ export async function DELETE(request, context) {
     await connection();
     // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     // Uncomment and modify the delete operation as needed:
-    await UserModal.deleteOne({ username: name });
+    await UserModal.deleteOne({ username: name, group });
     return NextResponse.json({
       Message: `User deleted successfully`,
     });
@@ -24,12 +26,32 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { name } = context.params;
-    const { email, active } = await request.json();
+    const { email, active, username, website_name } = await request.json();
+
+    // If username is being changed, check if it already exists
+    if (username && username.toUpperCase() !== name.toUpperCase()) {
+      const existingUser = await UserModal.findOne({
+        username: username.toUpperCase(),
+        group,
+      });
+
+      if (existingUser) {
+        return NextResponse.json(
+          { Message: "User with this username already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Prepare update data with uppercase conversion for relevant fields
+    const updateData = { email, active };
+    if (username) updateData.username = username.toUpperCase();
+    if (website_name) updateData.website_name = website_name.toUpperCase();
 
     // Ensure username exists before updating
     const updatedUser = await UserModal.findOneAndUpdate(
-      { username: name },
-      { $set: { email, active } }
+      { username: name, group },
+      { $set: updateData }
     );
 
     if (!updatedUser) {

@@ -23,10 +23,16 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     check: false,
   });
 
+  const [initialBankName, setInitialBankName] = useState("");
+
   // Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "bank_name" || name === "ifsc_code") {
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // Populate Form if Editing
@@ -38,6 +44,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         ifsc_code: editData.ifsc_code || "",
         current_balance: editData.current_balance || "",
       });
+      setInitialBankName(editData.bank_name || "");
     }
   }, [editData]);
 
@@ -67,30 +74,76 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
     try {
-      if (editData) {
-        await axios.put(`/api/banks/${formData.bank_name}`, formData);
-        toast.success("Bank details updated successfully");
-      } else {
-        let user;
-        if (typeof window !== "undefined") {
-          user = JSON.parse(sessionStorage.getItem("user") || "{}");
-        }
-        await axios.post("/api/banks", {
-          ...formData,
-          created_by: user.username,
-        });
-        toast.success("Bank added successfully");
+      let user;
+      if (typeof window !== "undefined") {
+        user = JSON.parse(sessionStorage.getItem("user") || "{}");
       }
 
-      setLoading(false);
+      if (editData) {
+        const bankNameChanged = initialBankName !== formData.bank_name;
+        const updateData = { ...formData };
+
+        let apiUrl = `/api/banks/${initialBankName}?group=${user.group}`;
+
+        if (bankNameChanged) {
+          updateData.bank_name = formData.bank_name;
+        } else {
+          updateData.bank_name = initialBankName;
+        }
+        try {
+          const response = await axios.put(apiUrl, updateData);
+          toast.success(
+            response?.data?.Message || "Bank details updated successfully"
+          );
+          fetchData();
+          resetForm();
+        } catch (err) {
+          if (err.response && err.response.status === 400) {
+            toast.error(
+              err.response.data.Message || "Bank with this name already exists"
+            );
+            setLoading(false);
+            return;
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        try {
+          const response = await axios.post("/api/banks", {
+            ...formData,
+            created_by: user.username,
+            group: user.group,
+          });
+
+          toast.success(response.data.Message || "Bank added successfully");
+          fetchData();
+          resetForm();
+        } catch (err) {
+          // Check for specific error responses
+          if (err.response && err.response.status === 400) {
+            toast.error(
+              err.response.data.Message || "Bank with this name already exists"
+            );
+            // Keep the form open but clear loading state
+            setLoading(false);
+            return;
+          } else {
+            throw err; // rethrow if it's not the specific error we're handling
+          }
+        }
+      }
 
       fetchData();
       resetForm();
     } catch (error) {
       console.error("Error processing bank:", error);
-      toast.error("Failed to process bank details");
+      toast.error(
+        error.response?.data?.Message || "Failed to process bank details"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,7 +151,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     <>
       <div className="max-w-md mx-auto p-4">
         <h2 className="text-2xl font-bold text-center mb-6">
-          {editData ? "Edit Bank Account" : "Add Bank Account"}
+          {editData ? "Edit BK ac" : "Add BK ac"}
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -110,12 +163,11 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
               icon: <FaUniversity />,
               name: "bank_name",
               placeholder: "Bank Name",
-              disabled: editData,
             },
             {
               icon: <FaRegCreditCard />,
               name: "account_number",
-              placeholder: "Account Number",
+              placeholder: "ac Number",
             },
             { icon: <FaCode />, name: "ifsc_code", placeholder: "IFSC Code" },
             {
@@ -124,7 +176,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
               placeholder: "Current Balance",
               type: "number",
               step: "0.01",
-              disabled: editData,
             },
           ].map(
             (

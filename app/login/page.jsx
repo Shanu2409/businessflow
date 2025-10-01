@@ -44,7 +44,10 @@ const Page = () => {
       toast.success("Login Successful");
       router.push("/");
     } catch (error) {
-      console.log("Login failed:", error.response ? error.response.data : error.message);
+      console.log(
+        "Login failed:",
+        error.response ? error.response.data : error.message
+      );
       toast.error("Something went wrong");
     }
 
@@ -55,13 +58,20 @@ const Page = () => {
     <>
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 to-indigo-500 p-4">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Welcome</h1>
-          <p className="text-center text-gray-600 mb-4">Login to your account</p>
+          <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+            Welcome
+          </h1>
+          <p className="text-center text-gray-600 mb-4">Login to your ac</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username Input */}
             <div>
-              <label htmlFor="username" className="block text-gray-700 font-medium">Username</label>
+              <label
+                htmlFor="username"
+                className="block text-gray-700 font-medium"
+              >
+                Username
+              </label>
               <input
                 type="text"
                 id="username"
@@ -75,7 +85,12 @@ const Page = () => {
 
             {/* Password Input */}
             <div>
-              <label htmlFor="password" className="block text-gray-700 font-medium">Password</label>
+              <label
+                htmlFor="password"
+                className="block text-gray-700 font-medium"
+              >
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}

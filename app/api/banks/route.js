@@ -12,14 +12,34 @@ export async function POST(request) {
       current_balance,
       account_number,
       created_by,
-    } = await request.json();
+      group,
+    } = await request.json(); // Ensure bank_name is uppercase for validation
+    const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
 
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
+    const existingBank = await Bank.findOne({
+      bank_name: uppercaseBankName,
+      group,
+    });
+
+    if (existingBank) {
+      return NextResponse.json(
+        { Message: "Bank with this name already exists" },
+        { status: 400 }
+      );
+    }
     const newBank = new Bank({
-      bank_name,
-      ifsc_code,
+      bank_name: uppercaseBankName,
+      ifsc_code: ifsc_code ? ifsc_code.toUpperCase() : ifsc_code,
       current_balance: parseFloat(current_balance),
-      account_number: parseInt(account_number),
-      created_by,
+      account_number: account_number,
+      created_by: created_by ? created_by.toUpperCase() : created_by,
+      group,
     });
 
     await newBank.save();
@@ -39,16 +59,19 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
+    const sort = searchParams.get("sort") || "createdAt";
     const onlyNames = searchParams.get("onlyNames");
+    const group = searchParams.get("group");
 
     await connection();
 
     if (onlyNames === "true") {
-      const allNames = await Bank.distinct("bank_name");
+      const allNames = await Bank.distinct("bank_name", { group });
       return NextResponse.json({ data: allNames });
     }
 
     const query = {
+      group,
       $or: [
         { bank_name: { $regex: search, $options: "i" } },
         { ifsc_code: { $regex: search, $options: "i" } },
@@ -61,7 +84,7 @@ export async function GET(request) {
 
     // Get paginated bank data
     const banks = await Bank.find(query, { __v: 0, _id: 0 })
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(limit)
       .skip((page - 1) * limit);
 
@@ -78,11 +101,12 @@ export async function PUT(request) {
 
     const value = searchParams.get("value") || "";
     const bank_name = searchParams.get("bank_name") || "";
+    const group = searchParams.get("group");
 
     await connection();
 
     const result = await Bank.updateOne(
-      { bank_name: bank_name },
+      { bank_name: bank_name, group },
       { $set: { check: value } }
     );
 

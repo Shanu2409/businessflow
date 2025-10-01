@@ -9,12 +9,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { useDebounce } from "use-debounce";
 import {
-  FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
-  FaChevronUp,
   FaEdit,
-  FaTrash,
+  FaDownload,
 } from "react-icons/fa";
 
 const PageContent = () => {
@@ -32,12 +30,9 @@ const PageContent = () => {
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(true);
-  const [selectAllCheck, setSelectAllCheck] = useState(false);
+  const [sortLabel, setSortLabel] = useState("");
+  const [itemsPerPage] = useState(20);
 
-  const itemsPerPage = 20;
-
-  // Get user from sessionStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = JSON.parse(sessionStorage.getItem("user"));
@@ -45,17 +40,16 @@ const PageContent = () => {
     }
   }, []);
 
-  // Update search state when debounced value changes
   useEffect(() => {
     setSearch(debouncedSearch);
   }, [debouncedSearch]);
 
-  // Fetch bank data (pagination fixed)
   const fetchBankData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -64,9 +58,8 @@ const PageContent = () => {
       toast.error("Failed to fetch bank data.");
     }
     setLoading(false);
-  }, [search, page]); // ✅ Depend on `page` and `search`
+  }, [search, page, sortLabel, user]);
 
-  // Fetch data when dependencies change
   useEffect(() => {
     fetchBankData();
   }, [fetchBankData]);
@@ -75,19 +68,33 @@ const PageContent = () => {
     setSearchValue(e.target.value.toLowerCase());
   };
 
-  const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this bank account?")) {
-      try {
-        await axios.delete(`/api/banks/${id}`);
-        toast.success("Bank account deleted successfully.");
-        fetchBankData();
-      } catch (error) {
-        console.error("Error deleting bank:", error);
-      }
+  const handleIsEdit = (data) => {
+    setEditData(data);
+    setShowAddBankForm(true);
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await axios.get(
+        `/api/banks/export?group=${user.group}`,
+        {
+          responseType: "blob",
+        }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "BKs.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("BK details exported successfully.");
+    } catch (error) {
+      console.error("Error exporting bank details:", error);
+      toast.error("Failed to export bank details.");
     }
   };
 
-  // Handle pagination
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
 
   return (
@@ -97,9 +104,9 @@ const PageContent = () => {
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-              Bank Details
+              BK Details
             </h1>
-            {user?.type === "admin" && (
+            <div className="flex space-x-4">
               <button
                 className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
                 onClick={() => {
@@ -107,13 +114,19 @@ const PageContent = () => {
                   setEditData(null);
                 }}
               >
-                {showAddBankForm ? "Cancel" : "Add Bank"}
+                {showAddBankForm ? "Cancel" : "Add BK"}
               </button>
-            )}
+              <button
+                className="bg-blue-500 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                onClick={handleExport}
+              >
+                <FaDownload />
+                <span>Export</span>
+              </button>
+            </div>
           </div>
 
-          {/* Add Bank Form */}
-          {showAddBankForm && user?.type === "admin" && (
+          {showAddBankForm && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <AddBankForm
                 editData={editData}
@@ -123,22 +136,22 @@ const PageContent = () => {
             </div>
           )}
 
-          {/* Search Bar */}
           <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
             <input
               type="text"
-              placeholder="Search banks..."
+              placeholder="Search BKs..."
               value={searchValue}
               onChange={handleSearchChange}
               className="w-full p-3 border border-gray-300 rounded-md"
             />
           </div>
 
-          {/* Bank Table */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             {data.length > 0 && (
               <div className="flex justify-between items-center mb-4">
-                <span>Total: {totalData} | Page {page} of {computedTotalPages}</span>
+                <span>
+                  Total: {totalData} | Page {page} of {computedTotalPages}
+                </span>
                 <div className="flex space-x-4">
                   <button
                     onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -161,35 +174,103 @@ const PageContent = () => {
             )}
 
             {data.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead className="text-left text-white bg-secondary">
-                  <tr>
-                    <th className="px-4 py-2 border border-gray-600">Bank Name</th>
-                    <th className="px-4 py-2 border border-gray-600">IFSC Code</th>
-                    <th className="px-4 py-2 border border-gray-600">Account Number</th>
-                    <th className="px-4 py-2 border border-gray-600">Current Balance</th>
-                    {user?.type === "admin" && <th className="px-4 py-2 border border-gray-600">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((row) => (
-                    <tr key={row._id}>
-                      <td className="border px-4 py-2">{row.bank_name}</td>
-                      <td className="border px-4 py-2">{row.ifsc_code}</td>
-                      <td className="border px-4 py-2">{row.account_number}</td>
-                      <td className="border px-4 py-2">₹ {row.current_balance}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="text-left text-white bg-secondary">
+                    <tr>
+                      <th className="px-4 py-2 border border-gray-600">S.No</th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "bank_name" ? "-bank_name" : "bank_name"
+                          )
+                        }
+                      >
+                        BK Name
+                      </th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
+                          )
+                        }
+                      >
+                        IFSC Code
+                      </th>
+                      <th
+                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        onClick={() =>
+                          setSortLabel((prev) =>
+                            prev === "account_number"
+                              ? "-account_number"
+                              : "account_number"
+                          )
+                        }
+                      >
+                        ac Number
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Current Balance
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Group
+                      </th>
                       {user?.type === "admin" && (
-                        <td className="border px-4 py-2">
-                          <button onClick={() => handleDelete(row._id)} className="text-red-500">
-                            <FaTrash />
-                          </button>
-                        </td>
+                        <th className="px-4 py-2 border border-gray-600">
+                          Actions
+                        </th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : <p>No results found.</p>}
+                  </thead>
+                  <tbody>
+                    {data.map((row, index) => (
+                      <tr key={row._id}>
+                        <td className="border px-4 py-2">
+                          {index + 1 + (page - 1) * itemsPerPage}
+                        </td>
+                        <td
+                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.bank_name}`)
+                          }
+                        >
+                          {row.bank_name}
+                        </td>
+                        <td
+                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
+                          onClick={() =>
+                            router.push(`/transaction?search=${row.ifsc_code}`)
+                          }
+                        >
+                          {row.ifsc_code}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {row.account_number}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {row.current_balance}
+                        </td>
+                        <td className="border px-4 py-2">{row.group}</td>
+                        {user?.type === "admin" && (
+                          <td className="border px-4 py-2">
+                            <button
+                              onClick={() => handleIsEdit(row)}
+                              className="text-blue-500"
+                            >
+                              <FaEdit />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No results found.</p>
+            )}
           </div>
         </div>
       </div>
@@ -201,7 +282,7 @@ const PageContent = () => {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Loading bank page...</div>}>
+    <Suspense fallback={<div>Loading BK page...</div>}>
       <PageContent />
     </Suspense>
   );

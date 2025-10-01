@@ -1,5 +1,10 @@
 {
     "cSpell.words": [
         "ifsc"
+    ],
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+      {
+        "text": "Be short but precise in pointers. give priority to logical changes first then design based changes and add lots and lots of emojis with some sarcastic commets!!",
+      }
     ]
 }

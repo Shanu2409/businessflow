@@ -5,24 +5,40 @@ import React, { useEffect, useState } from "react";
 import { FaUniversity, FaCode, FaMoneyBillWave } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FullScreenLoader from "./FullScreenLoader";
+import { DropdownMenu } from "./DropdownMenu";
 
 const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   const [websiteName, setWebsiteName] = useState("");
   const [url, setUrl] = useState("");
+  const [initialWebsiteName, setInitialWebsiteName] = useState("");
+  const [initialBalance, setInitialBalance] = useState("");
   const [currentBalance, setCurrentBalance] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [transactionType, setTransactionType] = useState("Deposit");
   const handleEdit = async (data) => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
       const response = await axios.put(
-        `/api/websites/${data.website_name}`,
+        `/api/websites/${initialWebsiteName}?group=${user?.group}`,
         data
       );
-      toast.success(response?.data?.message);
+      toast.success(response?.data?.Message || "Website updated successfully");
+      setShowAddWebsiteForm(false);
+      fetchData();
+      fetchWebsiteList();
     } catch (error) {
       console.error("Error editing website:", error);
-      toast.error("Error editing website");
+      if (error.response && error.response.status === 400) {
+        toast.error(
+          error.response.data.Message || "Website with this name already exists"
+        );
+      } else {
+        toast.error("Error updating website");
+      }
     }
 
     setLoading(false);
@@ -54,6 +70,7 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
         website_name: websiteName,
         url: url,
         current_balance: currentBalance,
+        type: transactionType === "Deposit" ? true : false,
       });
       setShowAddWebsiteForm(false);
       fetchData();
@@ -72,32 +89,39 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     }
 
     setLoading(true);
-
     try {
-      const response = await axios.post("/api/websites", {
-        website_name: websiteName,
-        url: url,
-        current_balance: currentBalance,
-        created_by: user?.username,
-      });
+      try {
+        const response = await axios.post("/api/websites", {
+          website_name: websiteName,
+          url: url,
+          current_balance: currentBalance,
+          created_by: user?.username,
+          group: user?.group,
+        });
 
-      if (response.status !== 200) {
-        console.error(response.data.message);
-        toast.error(response.data.message);
-        return;
+        toast.success(response.data.Message || "Website added successfully");
+        fetchData();
+        fetchWebsiteList();
+
+        setWebsiteName("");
+        setUrl("");
+        setCurrentBalance("");
+        setShowAddWebsiteForm(false);
+      } catch (err) {
+        // Check for specific error responses
+        if (err.response && err.response.status === 400) {
+          toast.error(
+            err.response.data.Message || "Website with this name already exists"
+          );
+          // Keep form open to allow user to modify the name
+          return;
+        } else {
+          throw err; // rethrow if it's not the specific error we're handling
+        }
       }
-
-      toast.success(response.data.message);
-      fetchData();
-      fetchWebsiteList();
-
-      setWebsiteName("");
-      setUrl("");
-      setCurrentBalance("");
-      setShowAddWebsiteForm(false);
     } catch (error) {
       console.error("Error adding website:", error);
-      toast.error("Error adding website");
+      toast.error(error.response?.data?.Message || "Error adding website");
     }
 
     setLoading(false);
@@ -108,6 +132,8 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       setWebsiteName(editData.website_name);
       setUrl(editData.url);
       setCurrentBalance(editData.current_balance);
+      setInitialBalance(editData.current_balance);
+      setInitialWebsiteName(editData?.website_name);
     }
   }, [editData]);
 
@@ -127,11 +153,9 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
               className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
               type="text"
               placeholder="Website Name"
-              disabled={editData}
-              style={{ cursor: editData ? "not-allowed" : "default" }}
               aria-label="Website Name"
               value={websiteName}
-              onChange={(e) => setWebsiteName(e.target.value)}
+              onChange={(e) => setWebsiteName(e.target.value.toUpperCase())}
             />
           </div>
 
@@ -153,14 +177,29 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
               className="appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none"
               type="number"
               step="0.1"
-              disabled={editData}
-              style={{ cursor: editData ? "not-allowed" : "default" }}
               placeholder="Current Balance"
               aria-label="Current Balance"
               value={currentBalance}
-              onChange={(e) => setCurrentBalance(e.target.value)}
+              onChange={(e) => {
+                setCurrentBalance(e.target.value);
+                if (editData) {
+                  setTransactionType(
+                    Number(e.target.value) > initialBalance
+                      ? "Deposit"
+                      : "Withdraw"
+                  );
+                }
+              }}
             />
           </div>
+
+          <DropdownMenu
+            label=""
+            options={["Deposit", "Withdraw"]}
+            value={transactionType}
+            onChange={setTransactionType}
+            isDisabled={true}
+          />
 
           <div className="flex items-center justify-center">
             <button

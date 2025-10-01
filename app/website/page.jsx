@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -15,6 +15,7 @@ import {
   FaChevronUp,
   FaEdit,
   FaTrash,
+  FaDownload,
 } from "react-icons/fa";
 
 const PageContent = () => {
@@ -32,57 +33,86 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [user, setUser] = useState(null);
 
-  // Update search when debounced value changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
+
   useEffect(() => {
     setSearch(debouncedSearch);
   }, [debouncedSearch]);
 
-  // Handle search input changes
   const handleSearchChange = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearchValue(value);
+    setSearchValue(e.target.value.toLowerCase());
   };
 
-  const fetchWebsiteData = async () => {
+  const fetchWebsiteData = useCallback(async () => {
+    if (!user) return;
     const searchQuery = searchParams.get("search") || "";
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?search=${search || searchQuery}&page=${page}&limit=20`
+        `/api/websites?search=${
+          search || searchQuery
+        }&page=${page}&limit=20&group=${user.group}`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-  };
+  }, [user, search, page, searchParams]);
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this website?")) {
       setLoading(true);
       try {
-        const response = await axios.delete(`/api/websites/${id}`);
+        const response = await axios.delete(
+          `/api/websites/${id}?group=${user.group}`
+        );
         toast.success(response?.data?.message);
         fetchWebsiteData();
       } catch (error) {
         console.error("Error deleting website:", error);
       }
-
       setLoading(false);
     }
   };
 
   const handleIsEdit = (data) => {
     setEditData(data);
+    setHistory(data?.history);
     setShowWebsiteForm(true);
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await axios.get(`/api/websites/export`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "websites.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("Website details exported successfully.");
+    } catch (error) {
+      console.error("Error exporting website details:", error);
+      toast.error("Failed to export website details.");
+    }
   };
 
   useEffect(() => {
     fetchWebsiteData();
-  }, [search, page]);
+  }, [fetchWebsiteData]);
 
-  // Compute pagination
   const itemsPerPage = 20;
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
   const currentRows = data;
@@ -92,36 +122,78 @@ const PageContent = () => {
       <div className="min-h-screen bg-gray-100">
         <Navbar />
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Header & Toggle Form Button */}
+          {/* Header & Buttons */}
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               Websites Details
             </h1>
-            <button
-              className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
-              onClick={() => {
-                setShowWebsiteForm(!showWebsiteForm);
-                setEditData(null);
-              }}
-            >
-              {showWebsiteForm ? "Cancel" : "Add Website"}
-            </button>
+            <div className="flex space-x-4">
+              <button
+                className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 ease-in-out shadow"
+                onClick={() => {
+                  setShowWebsiteForm(!showWebsiteForm);
+                  setEditData(null);
+                  setHistory([]);
+                }}
+              >
+                {showWebsiteForm ? "Cancel" : "Add Website"}
+              </button>
+              <button
+                className="bg-blue-500 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
+                onClick={handleExport}
+              >
+                <FaDownload />
+                <span>Export</span>
+              </button>
+            </div>
           </div>
 
           {/* Add Website Form */}
           {showWebsiteForm && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
               <AddWebsiteForm
                 editData={editData}
                 setShowAddWebsiteForm={setShowWebsiteForm}
                 fetchData={fetchWebsiteData}
               />
+
+              {/* History List */}
+              {history.length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-lg shadow-md w-full sm:w-1/3">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-4">
+                    History
+                  </h2>
+                  <div className="max-h-60 overflow-y-auto">
+                    {" "}
+                    {/* Set a max height and enable vertical scrolling */}
+                    <ul className="space-y-2">
+                      {history.map((entry, index) => {
+                        const isPositive = entry.startsWith("+");
+                        const textColorClass = isPositive
+                          ? "text-green-500"
+                          : "text-red-500"; // Green for positive, red for negative
+
+                        return (
+                          <li
+                            key={index}
+                            className={`px-4 py-2 rounded-md ${textColorClass} flex justify-between items-baseline hover:bg-gray-200 transition duration-300 cursor-pointer`}
+                          >
+                            <span className="text-lg">{entry}</span>
+                            <span className="text-sm text-gray-500">
+                              Entry {index + 1}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Table Section */}
           <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-            {/* Search Section */}
             <div className="w-full mt-4 mb-6">
               <div className="p-4 bg-white rounded-lg shadow-md">
                 <button
@@ -147,117 +219,60 @@ const PageContent = () => {
               </div>
             </div>
 
-            {/* Pagination Controls */}
-            {data.length > 0 && (
-              <div className="flex justify-between items-center m-4">
-                <span className="text-gray-700">
-                  Total Data: {totalData} | Page {page} of {computedTotalPages}
-                </span>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={page === 1}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronLeft />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setPage((prev) => Math.min(prev + 1, computedTotalPages))
-                    }
-                    disabled={page === computedTotalPages}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronRight />
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Table */}
             {data.length > 0 ? (
               <table className="w-full border-collapse">
                 <thead className="text-left text-white bg-secondary">
                   <tr>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      WEBSITE NAME
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      URL
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      CURRENT BALANCE
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      CREATED BY
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      CREATED AT
-                    </th>
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      ACTIONS
-                    </th>
+                    <th className="px-4 py-2 border">WEBSITE NAME</th>
+                    <th className="px-4 py-2 border">URL</th>
+                    <th className="px-4 py-2 border">CURRENT BALANCE</th>
+                    <th className="px-4 py-2 border">CREATED BY</th>
+                    <th className="px-4 py-2 border">GROUP</th>
+                    <th className="px-4 py-2 border">CREATED AT</th>
+                    <th className="px-4 py-2 border">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentRows.map((row, rowIndex) => (
                     <tr key={rowIndex} className="text-center">
                       <td
-                        className="px-4 py-2 border border-gray-600 hover:underline cursor-pointer text-blue-600"
+                        className="border px-4 py-2 cursor-pointer text-blue-500 hover:underline"
                         onClick={() =>
                           router.push(`/transaction?search=${row.website_name}`)
                         }
-                        title={`Search transactions for ${row.website_name}`}
                       >
                         {row.website_name}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        {row.url}
+                      <td className="px-4 py-2 border">{row.url}</td>
+                      <td className="px-4 py-2 border">
+                        {row.current_balance}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        ₹ {Number(row.current_balance).toLocaleString("en-IN")}
+                      <td className="px-4 py-2 border">{row.created_by}</td>
+                      <td className="px-4 py-2 border">{row.group}</td>
+                      <td className="px-4 py-2 border">
+                        {new Date(row.createdAt).toLocaleString()}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        {row.created_by}
-                      </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        {new Intl.DateTimeFormat("en-IN", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }).format(new Date(row.createdAt))}
-                      </td>
-                      <td className="px-4 py-2 border border-gray-600">
-                        <div className="flex justify-center space-x-3">
-                          <button
-                            onClick={() => handleIsEdit(row)}
-                            className="text-blue-500"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(row.website_name)}
-                            className="text-red-500"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
+                      <td className="px-4 py-2 border">
+                        <button
+                          onClick={() => handleIsEdit(row)}
+                          className="text-blue-500"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(row.website_name)}
+                          className="text-red-500 ml-3"
+                        >
+                          <FaTrash />
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : (
-              <div className="flex flex-col items-center mt-4">
-                <h1 className="text-2xl font-semibold text-gray-700 mb-2">
-                  No results found
-                </h1>
-                <p className="text-gray-500">
-                  Try expanding your search criteria to find more results.
-                </p>
-              </div>
+              <p className="text-center">No results found.</p>
             )}
           </div>
         </div>
