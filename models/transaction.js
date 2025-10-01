@@ -29,6 +29,7 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     set: (value) => (value ? value.toUpperCase() : value),
   },
+  group: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -7,8 +7,10 @@ export async function DELETE(request, context) {
     await connection();
     // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     // Uncomment and modify the delete operation as needed:
-    await UserModal.deleteOne({ username: name });
+    await UserModal.deleteOne({ username: name, group });
     return NextResponse.json({
       Message: `User deleted successfully`,
     });
@@ -30,6 +32,7 @@ export async function PUT(request, context) {
     if (username && username.toUpperCase() !== name.toUpperCase()) {
       const existingUser = await UserModal.findOne({
         username: username.toUpperCase(),
+        group,
       });
 
       if (existingUser) {
@@ -47,7 +50,7 @@ export async function PUT(request, context) {
 
     // Ensure username exists before updating
     const updatedUser = await UserModal.findOneAndUpdate(
-      { username: name },
+      { username: name, group },
       { $set: updateData }
     );
 

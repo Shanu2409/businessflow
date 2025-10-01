@@ -7,8 +7,10 @@ export async function DELETE(request, context) {
     await connection();
     // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     // Uncomment and modify the delete operation as needed:
-    await Website.deleteOne({ website_name: name });
+    await Website.deleteOne({ website_name: name, group });
     return NextResponse.json({
       Message: `Website deleted successfully`,
     });
@@ -22,6 +24,8 @@ export async function PUT(request, context) {
   try {
     await connection(); // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     const { account_number, url, website_name, current_balance, type } =
       await request.json();
     // Uncomment and modify the update operation as needed:
@@ -34,6 +38,7 @@ export async function PUT(request, context) {
     if (uppercaseWebsiteName && uppercaseWebsiteName !== name.toUpperCase()) {
       const existingWebsite = await Website.findOne({
         website_name: uppercaseWebsiteName,
+        group,
       });
       if (existingWebsite) {
         return NextResponse.json(
@@ -65,7 +70,7 @@ export async function PUT(request, context) {
         };
 
     // Update the document in MongoDB
-    await Website.updateOne({ website_name: name }, updateObject, {
+    await Website.updateOne({ website_name: name, group }, updateObject, {
       upsert: true,
     });
 

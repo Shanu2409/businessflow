@@ -35,18 +35,18 @@ const HomeMenu = () => {
   // Menu data with icons
   const menuItems = [
     {
-      title: "Banks",
+      title: "BKs",
       link: "/bank",
       icon: <FiDatabase className="text-3xl" />,
       color: "bg-gradient-to-r from-blue-400 to-blue-600",
-      description: "Manage banking connections",
+      description: "Manage BK connections",
     },
     {
-      title: "Transactions",
+      title: "Flows",
       link: "/transaction",
       icon: <FiDollarSign className="text-3xl" />,
       color: "bg-gradient-to-r from-green-400 to-green-600",
-      description: "View and manage transactions",
+      description: "View and manage flows",
     },
     {
       title: "Users",
@@ -79,11 +79,11 @@ const HomeMenu = () => {
 
   if (user?.type === "admin") {
     menuItems.push({
-      title: "Accounts",
+      title: "ac",
       link: "/account",
       icon: <FiUser className="text-3xl" />,
       color: "bg-gradient-to-r from-teal-400 to-teal-600",
-      description: "Account administration",
+      description: "ac administration",
     });
   }
 
@@ -204,8 +204,8 @@ const HomeMenu = () => {
               <FiDatabase className="text-2xl text-blue-500" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-800">Add New Bank</h3>
-              <p className="text-sm text-gray-500">Configure banking</p>
+              <h3 className="font-medium text-gray-800">Add New BK</h3>
+              <p className="text-sm text-gray-500">Configure BK</p>
             </div>
           </a>
 

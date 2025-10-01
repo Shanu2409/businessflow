@@ -7,8 +7,10 @@ export async function DELETE(request, context) {
     await connection();
     // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     // Uncomment and modify the delete operation as needed:
-    await Bank.deleteOne({ bank_name: name });
+    await Bank.deleteOne({ bank_name: name, group });
     return NextResponse.json({
       Message: `Bank account deleted successfully`,
     });
@@ -22,6 +24,8 @@ export async function PUT(request, context) {
   try {
     await connection(); // Await the params from the context.
     const { name } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     const { account_number, ifsc_code, bank_name } = await request.json();
     // Convert bank_name to uppercase
     const uppercaseBankName = bank_name ? bank_name.toUpperCase() : bank_name;
@@ -29,7 +33,10 @@ export async function PUT(request, context) {
 
     // Check if the name is changed and if the new name already exists
     if (uppercaseBankName && uppercaseBankName !== name.toUpperCase()) {
-      const existingBank = await Bank.findOne({ bank_name: uppercaseBankName });
+      const existingBank = await Bank.findOne({
+        bank_name: uppercaseBankName,
+        group,
+      });
       if (existingBank) {
         return NextResponse.json(
           { Message: "Bank with this name already exists" },
@@ -40,7 +47,7 @@ export async function PUT(request, context) {
 
     // Proceed with update if no duplicate
     await Bank.updateOne(
-      { bank_name: name },
+      { bank_name: name, group },
       {
         $set: {
           account_number,

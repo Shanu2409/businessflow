@@ -32,8 +32,16 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [user, setUser] = useState(null);
 
   const itemsPerPage = 20;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   // Update search when debounced value changes
   useEffect(() => {
@@ -42,10 +50,11 @@ const PageContent = () => {
 
   // Fetch users (Pagination fixed)
   const fetchUserData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}`
+        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -54,7 +63,7 @@ const PageContent = () => {
       toast.error("Failed to fetch user data.");
     }
     setLoading(false);
-  }, [search, page]); // ✅ Depend on `search` and `page`
+  }, [search, page, user]); // ✅ Depend on `search` and `page`
 
   useEffect(() => {
     fetchUserData();
@@ -66,9 +75,11 @@ const PageContent = () => {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this user account?")) {
+    if (confirm("Are you sure you want to delete this user ac?")) {
       try {
-        const response = await axios.delete(`/api/users/${id}`);
+        const response = await axios.delete(
+          `/api/users/${id}?group=${user.group}`
+        );
         toast.success(response?.data?.message);
         fetchUserData();
       } catch (error) {
@@ -132,7 +143,9 @@ const PageContent = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             {data.length > 0 && (
               <div className="flex justify-between items-center mb-4">
-                <span>Total: {totalData} | Page {page} of {computedTotalPages}</span>
+                <span>
+                  Total: {totalData} | Page {page} of {computedTotalPages}
+                </span>
                 <div className="flex space-x-4">
                   <button
                     onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -163,6 +176,7 @@ const PageContent = () => {
                     <th className="px-4 py-2 border">Email</th>
                     <th className="px-4 py-2 border">Active</th>
                     <th className="px-4 py-2 border">Created By</th>
+                    <th className="px-4 py-2 border">Group</th>
                     <th className="px-4 py-2 border">Created At</th>
                     <th className="px-4 py-2 border">Actions</th>
                   </tr>
@@ -173,14 +187,25 @@ const PageContent = () => {
                       <td className="border px-4 py-2">{row.username}</td>
                       <td className="border px-4 py-2">{row.website_name}</td>
                       <td className="border px-4 py-2">{row.email}</td>
-                      <td className="border px-4 py-2">{row.active ? "✅" : "❌"}</td>
-                      <td className="border px-4 py-2">{row.created_by}</td>
-                      <td className="border px-4 py-2">{new Date(row.createdAt).toLocaleString()}</td>
                       <td className="border px-4 py-2">
-                        <button onClick={() => handleIsEdit(row)} className="text-blue-500">
+                        {row.active ? "✅" : "❌"}
+                      </td>
+                      <td className="border px-4 py-2">{row.created_by}</td>
+                      <td className="border px-4 py-2">{row.group}</td>
+                      <td className="border px-4 py-2">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <button
+                          onClick={() => handleIsEdit(row)}
+                          className="text-blue-500"
+                        >
                           <FaEdit />
                         </button>
-                        <button onClick={() => handleDelete(row._id)} className="text-red-500">
+                        <button
+                          onClick={() => handleDelete(row._id)}
+                          className="text-red-500"
+                        >
                           <FaTrash />
                         </button>
                       </td>
@@ -188,7 +213,9 @@ const PageContent = () => {
                   ))}
                 </tbody>
               </table>
-            ) : <p>No results found.</p>}
+            ) : (
+              <p>No results found.</p>
+            )}
           </div>
         </div>
       </div>
@@ -198,5 +225,9 @@ const PageContent = () => {
 };
 
 export default function Page() {
-  return <Suspense fallback={<div>Loading Users page...</div>}><PageContent /></Suspense>;
+  return (
+    <Suspense fallback={<div>Loading Users page...</div>}>
+      <PageContent />
+    </Suspense>
+  );
 }

@@ -6,13 +6,14 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { website_name, url, current_balance, created_by } =
+    const { website_name, url, current_balance, created_by, group } =
       await request.json(); // Ensure website_name is uppercase for validation
     const uppercaseWebsiteName = website_name
       ? website_name.toUpperCase()
       : website_name;
     const existingWebsite = await Website.findOne({
       website_name: uppercaseWebsiteName,
+      group,
     });
 
     if (existingWebsite) {
@@ -27,6 +28,7 @@ export async function POST(request) {
       current_balance: parseFloat(current_balance),
       history: ["+" + parseFloat(current_balance)],
       created_by: created_by ? created_by.toUpperCase() : created_by,
+      group,
     });
 
     await newWebsite.save();
@@ -46,15 +48,17 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
     const onlyNames = searchParams.get("onlyNames");
+    const group = searchParams.get("group");
 
     await connection();
 
     if (onlyNames === "true") {
-      const allNames = await Website.distinct("website_name");
+      const allNames = await Website.distinct("website_name", { group });
       return NextResponse.json({ data: allNames });
     }
 
     const query = {
+      group,
       $or: [
         { website_name: { $regex: search, $options: "i" } },
         { url: { $regex: search, $options: "i" } },

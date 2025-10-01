@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: false },
   active: { type: Boolean, default: true },
   created_by: { type: String, default: "user" },
+  group: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

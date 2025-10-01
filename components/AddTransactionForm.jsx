@@ -61,18 +61,11 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
-    const isAdmin = user.type === "admin";
-
-    if (!isAdmin) {
-      const allowedBanks = user.allowed_banks || [];
-      setBankList(allowedBanks);
-      return;
-    }
 
     // Admin: fetch all banks
     try {
       const { data: responseData } = await axios.get(
-        "/api/banks?onlyNames=true"
+        `/api/banks?onlyNames=true&group=${user.group}`
       );
       const bankData = responseData?.data || [];
 
@@ -84,9 +77,16 @@ const AddTransactionForm = ({
   };
 
   const fetchWebsiteList = async () => {
+    if (typeof window === "undefined") return;
+
+    const userRaw = sessionStorage.getItem("user");
+    if (!userRaw) return;
+
+    const user = JSON.parse(userRaw);
+
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true`
+        `/api/websites?onlyNames=true&group=${user.group}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -98,9 +98,16 @@ const AddTransactionForm = ({
   };
 
   const fetchUserList = async () => {
+    if (typeof window === "undefined") return;
+
+    const userRaw = sessionStorage.getItem("user");
+    if (!userRaw) return;
+
+    const user = JSON.parse(userRaw);
+
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true`
+        `/api/users?onlyNames=true&group=${user.group}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));
@@ -145,6 +152,7 @@ const AddTransactionForm = ({
         transaction_type: transactionType,
         amount: numericAmount,
         created_by: user.username,
+        group: user.group,
       });
 
       toast.success(response.data.message);
@@ -177,7 +185,7 @@ const AddTransactionForm = ({
             {" "}
             {/* Add a container for the form with max width */}
             <h2 className="text-2xl font-bold text-center mb-4">
-              {editData ? "Edit Transaction" : "Add Transaction"}
+              {editData ? "Edit Flow" : "Add Flow"}
             </h2>
             <form
               onSubmit={handleSubmit}
@@ -196,7 +204,6 @@ const AddTransactionForm = ({
               <DropdownMenu
                 label="Select a Website"
                 options={websites}
-                isDisabled={true}
                 value={selectedWebsite}
                 onChange={setSelectedWebsite}
                 addRoute="/website?add=true"

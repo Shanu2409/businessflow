@@ -49,10 +49,11 @@ const PageContent = () => {
 
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}`
+        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}&group=${user.group}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -60,7 +61,7 @@ const PageContent = () => {
       toast.error("Failed to load transactions.");
     }
     setLoading(false);
-  }, [search, page, sortLabel]);
+  }, [search, page, sortLabel, user]);
 
   // Update useEffect to listen for debounced search changes
   useEffect(() => {
@@ -72,6 +73,29 @@ const PageContent = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  // Fetch banks, users, websites for dropdowns
+  useEffect(() => {
+    if (!user) return;
+    const fetchDropdownData = async () => {
+      try {
+        const [banksRes, usersRes, websitesRes] = await Promise.all([
+          axios.get(`/api/banks?onlyNames=true&group=${user.group}`),
+          axios.get(`/api/users?onlyNames=true&group=${user.group}`),
+          axios.get(`/api/websites?onlyNames=true&group=${user.group}`),
+        ]);
+        sessionStorage.setItem("banks", JSON.stringify(banksRes.data.data));
+        sessionStorage.setItem("users", JSON.stringify(usersRes.data.data));
+        sessionStorage.setItem(
+          "websites",
+          JSON.stringify(websitesRes.data.data)
+        );
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+      }
+    };
+    fetchDropdownData();
+  }, [user]);
+
   // Ensure search value updates but doesn't immediately trigger fetch
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -81,13 +105,13 @@ const PageContent = () => {
 
   // Delete Transaction
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this transaction?")) {
+    if (confirm("Are you sure you want to delete this flow?")) {
       try {
-        await axios.delete(`/api/transactions/${id}`);
-        toast.success("Transaction deleted.");
+        await axios.delete(`/api/transactions/${id}?group=${user.group}`);
+        toast.success("Flow deleted.");
         fetchTransactions();
       } catch (error) {
-        toast.error("Failed to delete transaction.");
+        toast.error("Failed to delete flow.");
       }
     }
   };
@@ -213,7 +237,7 @@ const PageContent = () => {
             }`}
           >
             <h1 className="text-3xl font-semibold text-gray-800 transition-all duration-300">
-              {showTransactionForm ? "Add New Transaction" : "Transactions"}
+              {showTransactionForm ? "Add New Flow" : "Flows"}
             </h1>
             <button
               className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${
@@ -223,7 +247,7 @@ const PageContent = () => {
               }`}
               onClick={toggleForm}
             >
-              {showTransactionForm ? "Cancel" : "Add Transaction"}
+              {showTransactionForm ? "Cancel" : "Add Flow"}
             </button>
           </div>
 
@@ -306,13 +330,13 @@ const PageContent = () => {
                   isBankEnabled ? "text-green-600" : "text-gray-500"
                 }`}
               >
-                Bank
+                BK
               </span>
             </div>
           </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Flows Table */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="w-full overflow-x-auto">
             {/* Pagination Controls */}
@@ -402,7 +426,7 @@ const PageContent = () => {
                       )
                     }
                   >
-                    Bank
+                    BK
                   </th>
                   <th
                     className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
@@ -413,6 +437,9 @@ const PageContent = () => {
                     }
                   >
                     Created By
+                  </th>
+                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                    Group
                   </th>
                   <th
                     className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
@@ -525,6 +552,9 @@ const PageContent = () => {
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {row.created_by}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row.group}
                       </td>
                       <td className="px-4 py-2 border border-gray-600">
                         {isBankEnabled

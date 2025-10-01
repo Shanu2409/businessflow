@@ -36,6 +36,14 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({}); // Track password visibility
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   // Update search state when debounced value changes
   useEffect(() => {
@@ -51,12 +59,13 @@ const PageContent = () => {
   const itemsPerPage = 20;
 
   const fetchBankData = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
         `/api/accounts?search=${
           search || searchParams.get("search") || ""
-        }&page=${page}&limit=${itemsPerPage}`
+        }&page=${page}&limit=${itemsPerPage}&group=${user.group}`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
@@ -67,10 +76,10 @@ const PageContent = () => {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this bank account?")) {
+    if (confirm("Are you sure you want to delete this BK ac?")) {
       try {
-        await axios.delete(`/api/accounts/${id}`);
-        toast.success("Bank account deleted successfully.");
+        await axios.delete(`/api/accounts/${id}?group=${user.group}`);
+        toast.success("BK ac deleted successfully.");
         fetchBankData();
       } catch (error) {
         console.error("Error deleting bank:", error);
@@ -108,7 +117,7 @@ const PageContent = () => {
           {/* Header & Toggle Form Button */}
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-              Accounts Details
+              ac Details
             </h1>
             <button
               className="bg-blue-600 text-white font-semibold px-6 py-2 rounded transition duration-300 hover:bg-blue-700 shadow"
@@ -197,6 +206,9 @@ const PageContent = () => {
                       Password
                     </th>
                     <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                      Group
+                    </th>
+                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                       Created At
                     </th>
                     <th className="px-4 py-2 border border-gray-600 text-sm text-center">
@@ -239,6 +251,10 @@ const PageContent = () => {
                             <FaEye />
                           )}
                         </button>
+                      </td>
+
+                      <td className="px-4 py-2 border border-gray-600">
+                        {row?.group}
                       </td>
 
                       <td className="px-4 py-2 border border-gray-600">

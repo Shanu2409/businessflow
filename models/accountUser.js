@@ -8,6 +8,7 @@ const accountUserSchema = new mongoose.Schema({
   },
   password: { type: String, required: true },
   type: { type: String, default: "user" },
+  group: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   allowed_banks: { type: Array, default: [] },
 });

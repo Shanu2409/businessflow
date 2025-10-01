@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -34,6 +34,14 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [history, setHistory] = useState([]);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+      setUser(userData);
+    }
+  }, []);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -43,25 +51,30 @@ const PageContent = () => {
     setSearchValue(e.target.value.toLowerCase());
   };
 
-  const fetchWebsiteData = async () => {
+  const fetchWebsiteData = useCallback(async () => {
+    if (!user) return;
     const searchQuery = searchParams.get("search") || "";
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?search=${search || searchQuery}&page=${page}&limit=20`
+        `/api/websites?search=${
+          search || searchQuery
+        }&page=${page}&limit=20&group=${user.group}`
       );
       setData(responseData?.data);
       setTotalData(responseData?.totalData);
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-  };
+  }, [user, search, page, searchParams]);
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this website?")) {
       setLoading(true);
       try {
-        const response = await axios.delete(`/api/websites/${id}`);
+        const response = await axios.delete(
+          `/api/websites/${id}?group=${user.group}`
+        );
         toast.success(response?.data?.message);
         fetchWebsiteData();
       } catch (error) {
@@ -98,7 +111,7 @@ const PageContent = () => {
 
   useEffect(() => {
     fetchWebsiteData();
-  }, [search, page]);
+  }, [fetchWebsiteData]);
 
   const itemsPerPage = 20;
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
@@ -215,6 +228,7 @@ const PageContent = () => {
                     <th className="px-4 py-2 border">URL</th>
                     <th className="px-4 py-2 border">CURRENT BALANCE</th>
                     <th className="px-4 py-2 border">CREATED BY</th>
+                    <th className="px-4 py-2 border">GROUP</th>
                     <th className="px-4 py-2 border">CREATED AT</th>
                     <th className="px-4 py-2 border">ACTIONS</th>
                   </tr>
@@ -235,6 +249,7 @@ const PageContent = () => {
                         {row.current_balance}
                       </td>
                       <td className="px-4 py-2 border">{row.created_by}</td>
+                      <td className="px-4 py-2 border">{row.group}</td>
                       <td className="px-4 py-2 border">
                         {new Date(row.createdAt).toLocaleString()}
                       </td>

@@ -13,6 +13,7 @@ export async function POST(request) {
       created_by,
       active,
       current_balance,
+      group,
     } = await request.json(); // Ensure username is uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
     const existingUser = await UserModal.findOne({
@@ -32,6 +33,7 @@ export async function POST(request) {
       current_balance,
       created_by: created_by ? created_by.toUpperCase() : created_by,
       active,
+      group,
     });
 
     await newWebsite.save();
@@ -52,12 +54,13 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
     const onlyNames = searchParams.get("onlyNames");
+    const group = searchParams.get("group");
 
     await connection();
 
     if (onlyNames === "true") {
       const userNames = await UserModal.find(
-        {},
+        { group },
         { _id: 0, username: 1, website_name: 1 }
       ).then((users) =>
         users.reduce((acc, cur) => {
@@ -69,6 +72,7 @@ export async function GET(request) {
     }
 
     const query = {
+      group,
       $or: [
         { username: { $regex: search, $options: "i" } },
         { website_name: { $regex: search, $options: "i" } },

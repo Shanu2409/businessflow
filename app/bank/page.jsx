@@ -45,10 +45,11 @@ const PageContent = () => {
   }, [debouncedSearch]);
 
   const fetchBankData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -57,7 +58,7 @@ const PageContent = () => {
       toast.error("Failed to fetch bank data.");
     }
     setLoading(false);
-  }, [search, page, sortLabel]);
+  }, [search, page, sortLabel, user]);
 
   useEffect(() => {
     fetchBankData();
@@ -74,17 +75,20 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
-      const response = await axios.get(`/api/banks/export`, {
-        responseType: "blob",
-      });
+      const response = await axios.get(
+        `/api/banks/export?group=${user.group}`,
+        {
+          responseType: "blob",
+        }
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const a = document.createElement("a");
       a.href = url;
-      a.download = "banks.xlsx";
+      a.download = "BKs.xlsx";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast.success("Bank details exported successfully.");
+      toast.success("BK details exported successfully.");
     } catch (error) {
       console.error("Error exporting bank details:", error);
       toast.error("Failed to export bank details.");
@@ -100,7 +104,7 @@ const PageContent = () => {
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-              Bank Details
+              BK Details
             </h1>
             <div className="flex space-x-4">
               <button
@@ -110,7 +114,7 @@ const PageContent = () => {
                   setEditData(null);
                 }}
               >
-                {showAddBankForm ? "Cancel" : "Add Bank"}
+                {showAddBankForm ? "Cancel" : "Add BK"}
               </button>
               <button
                 className="bg-blue-500 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2"
@@ -135,7 +139,7 @@ const PageContent = () => {
           <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
             <input
               type="text"
-              placeholder="Search banks..."
+              placeholder="Search BKs..."
               value={searchValue}
               onChange={handleSearchChange}
               className="w-full p-3 border border-gray-300 rounded-md"
@@ -183,7 +187,7 @@ const PageContent = () => {
                           )
                         }
                       >
-                        Bank Name
+                        BK Name
                       </th>
                       <th
                         className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
@@ -205,10 +209,13 @@ const PageContent = () => {
                           )
                         }
                       >
-                        Account Number
+                        ac Number
                       </th>
                       <th className="px-4 py-2 border border-gray-600">
                         Current Balance
+                      </th>
+                      <th className="px-4 py-2 border border-gray-600">
+                        Group
                       </th>
                       {user?.type === "admin" && (
                         <th className="px-4 py-2 border border-gray-600">
@@ -245,6 +252,7 @@ const PageContent = () => {
                         <td className="border px-4 py-2">
                           {row.current_balance}
                         </td>
+                        <td className="border px-4 py-2">{row.group}</td>
                         {user?.type === "admin" && (
                           <td className="border px-4 py-2">
                             <button
@@ -274,7 +282,7 @@ const PageContent = () => {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Loading bank page...</div>}>
+    <Suspense fallback={<div>Loading BK page...</div>}>
       <PageContent />
     </Suspense>
   );

@@ -15,6 +15,7 @@ export async function POST(request) {
       transaction_type,
       created_by,
       amount,
+      group,
     } = await request.json();
 
     // Ensure all names are uppercase for consistency
@@ -32,11 +33,11 @@ export async function POST(request) {
 
     // Fetch bank and website balances
     const bank = await Bank.findOne(
-      { bank_name: uppercaseBankName },
+      { bank_name: uppercaseBankName, group },
       { current_balance: 1 }
     );
     const website = await Website.findOne(
-      { website_name: uppercaseWebsiteName },
+      { website_name: uppercaseWebsiteName, group },
       { current_balance: 1 }
     );
 
@@ -47,7 +48,7 @@ export async function POST(request) {
     // Perform transaction updates
     if (transaction_type === "Deposit") {
       await Bank.updateOne(
-        { bank_name: uppercaseBankName },
+        { bank_name: uppercaseBankName, group },
         {
           $inc: { current_balance: numericAmount },
           $set: { check: false }, // Corrected placement
@@ -56,13 +57,13 @@ export async function POST(request) {
       );
 
       await Website.updateOne(
-        { website_name: uppercaseWebsiteName },
+        { website_name: uppercaseWebsiteName, group },
         { $inc: { current_balance: -numericAmount } },
         { upsert: false }
       );
     } else if (transaction_type === "Withdraw") {
       await Bank.updateOne(
-        { bank_name: uppercaseBankName },
+        { bank_name: uppercaseBankName, group },
         {
           $inc: { current_balance: -numericAmount },
           $set: { check: false }, // Corrected placement
@@ -71,7 +72,7 @@ export async function POST(request) {
       );
 
       await Website.updateOne(
-        { website_name: uppercaseWebsiteName },
+        { website_name: uppercaseWebsiteName, group },
         { $inc: { current_balance: numericAmount } },
         { upsert: false }
       );
@@ -100,6 +101,7 @@ export async function POST(request) {
       new_website_balance: newWebsiteBalance, // Use calculated value
       amount: numericAmount,
       created_by: uppercaseCreatedBy,
+      group,
     });
 
     await newTransaction.save();
@@ -124,6 +126,7 @@ export async function GET(request) {
     const endDate = searchParams.get("endDate");
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
+    const group = searchParams.get("group");
 
     await connection();
 
@@ -131,6 +134,7 @@ export async function GET(request) {
     const uppercaseSearch = search ? search.toUpperCase() : "";
 
     const query = {
+      group,
       $or: [
         { bank_name: { $regex: uppercaseSearch } },
         { website_name: { $regex: uppercaseSearch } },

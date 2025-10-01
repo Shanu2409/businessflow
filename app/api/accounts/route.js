@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     await connection();
 
-    const { username, password, allowed_banks } = await request.json();
+    const { username, password, allowed_banks, group } = await request.json();
 
     // Convert username to uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
@@ -27,6 +27,7 @@ export async function POST(request) {
     const newAccount = new Account({
       username: uppercaseUsername,
       password,
+      group,
       allowed_banks: allowed_banks
         ? allowed_banks.map((bank) => bank.toUpperCase())
         : [], // Ensure all bank names are uppercase
@@ -49,11 +50,13 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
+    const group = searchParams.get("group");
 
     await connection();
 
     const query = {
       type: "user", // Ensuring only users are fetched
+      group,
       $or: [
         { username: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },

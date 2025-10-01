@@ -17,9 +17,13 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   const [transactionType, setTransactionType] = useState("Deposit");
   const handleEdit = async (data) => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
       const response = await axios.put(
-        `/api/websites/${initialWebsiteName}`,
+        `/api/websites/${initialWebsiteName}?group=${user?.group}`,
         data
       );
       toast.success(response?.data?.Message || "Website updated successfully");
@@ -92,6 +96,7 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
           url: url,
           current_balance: currentBalance,
           created_by: user?.username,
+          group: user?.group,
         });
 
         toast.success(response.data.Message || "Website added successfully");

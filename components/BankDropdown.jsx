@@ -35,8 +35,8 @@ const BankDropdown = ({ bankList, allowedBanks, setAllowedBanks }) => {
         className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-left shadow-sm focus:outline-none"
       >
         {allowedBanks.length > 0
-          ? `${allowedBanks.length} Bank(s) Selected`
-          : "Select Banks"}
+          ? `${allowedBanks.length} BK(s) Selected`
+          : "Select BKs"}
       </button>
 
       {isOpen && (

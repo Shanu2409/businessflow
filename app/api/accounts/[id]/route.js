@@ -7,8 +7,10 @@ export async function DELETE(request, context) {
     await connection();
     // Await the params from the context.
     const { id } = await context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     // Uncomment and modify the delete operation as needed:
-    await Account.deleteOne({ username: id });
+    await Account.deleteOne({ username: id, group });
     return NextResponse.json({
       Message: `Account deleted successfully`,
     });
@@ -24,11 +26,13 @@ export async function PUT(request, context) {
 
     // Extract params & body
     const { id } = context.params;
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
     const { password, allowed_banks } = await request.json();
 
     // Ensure username exists before updating
     const updatedUser = await Account.findOneAndUpdate(
-      { username: id },
+      { username: id, group },
       { $set: { password, allowed_banks } }
     );
 

@@ -174,9 +174,13 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
 
   const fetchWebsiteList = async () => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true`
+        `/api/websites?onlyNames=true&group=${user.group}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -184,7 +188,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
 
       console.log(responseData);
     } catch (error) {
-      console.error("Error fetching bank data:", error);
+      console.error("Error fetching website data:", error);
     }
 
     setLoading(false);
@@ -207,8 +211,15 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   };
   const handleEdit = async (data) => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
-      const response = await axios.put(`/api/users/${data.username}`, data);
+      const response = await axios.put(
+        `/api/users/${data.username}?group=${user.group}`,
+        data
+      );
       toast.success(response?.data?.Message || "User updated successfully");
       fetchUserList();
       setShowAddUserForm(false);
@@ -255,6 +266,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
           website_name: selectedWebsite,
           active: isActive,
           created_by: user.username,
+          group: user.group,
         });
 
         toast.success(response.data.Message || "User created successfully");

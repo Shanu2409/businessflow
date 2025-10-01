@@ -23,15 +23,19 @@ const Navbar = () => {
   // Menu items with icons
   const menuItems = [
     { title: "HOME", link: "/", icon: <FiHome className="mr-2" /> },
-    { title: "BANKS", link: "/bank", icon: <FiDatabase className="mr-2" /> },
+    { title: "BKS", link: "/bank", icon: <FiDatabase className="mr-2" /> },
     {
-      title: "TRANSACTIONS",
+      title: "FLOWS",
       link: "/transaction",
       icon: <FiDollarSign className="mr-2" />,
     },
     { title: "USERS", link: "/user", icon: <FiUsers className="mr-2" /> },
     { title: "WEBSITES", link: "/website", icon: <FiGlobe className="mr-2" /> },
-    { title: "REPORTS", link: "/reports", icon: <FiPieChart className="mr-2" /> },
+    {
+      title: "REPORTS",
+      link: "/reports",
+      icon: <FiPieChart className="mr-2" />,
+    },
   ];
 
   const handleLogout = () => {

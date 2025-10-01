@@ -37,11 +37,18 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
 
   const handleEdit = async (data) => {
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
-      const response = await axios.put(`/api/accounts/${data.username}`, {
-        password: data.password,
-        allowed_banks: allowedBanks, // Send the allowed banks to the server
-      });
+      const response = await axios.put(
+        `/api/accounts/${data.username}?group=${user.group}`,
+        {
+          password: data.password,
+          allowed_banks: allowedBanks, // Send the allowed banks to the server
+        }
+      );
       toast.success(response?.data?.message);
       fetchData();
     } catch (error) {
@@ -67,12 +74,17 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     }
 
     setLoading(true);
+    let user = {};
+    if (typeof window !== "undefined") {
+      user = JSON.parse(sessionStorage.getItem("user"));
+    }
     try {
       try {
         const response = await axios.post("/api/accounts", {
           username,
           password,
           allowed_banks: allowedBanks, // Send the allowed banks to the server
+          group: user.group,
         });
 
         toast.success(response.data.Message || "User added successfully");
@@ -84,8 +96,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
         // Check for specific error responses
         if (err.response && err.response.status === 400) {
           toast.error(
-            err.response.data.Message ||
-              "Account with this username already exists"
+            err.response.data.Message || "ac with this username already exists"
           );
           // Keep the form open to allow the user to modify the username
           return;

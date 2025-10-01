@@ -28,7 +28,11 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
   // Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    if (name === "bank_name" || name === "ifsc_code") {
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // Populate Form if Editing
@@ -71,11 +75,16 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
 
     setLoading(true);
     try {
+      let user;
+      if (typeof window !== "undefined") {
+        user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      }
+
       if (editData) {
         const bankNameChanged = initialBankName !== formData.bank_name;
         const updateData = { ...formData };
 
-        let apiUrl = `/api/banks/${initialBankName}`;
+        let apiUrl = `/api/banks/${initialBankName}?group=${user.group}`;
 
         if (bankNameChanged) {
           updateData.bank_name = formData.bank_name;
@@ -101,15 +110,11 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
           }
         }
       } else {
-        let user;
-        if (typeof window !== "undefined") {
-          user = JSON.parse(sessionStorage.getItem("user") || "{}");
-        }
-
         try {
           const response = await axios.post("/api/banks", {
             ...formData,
             created_by: user.username,
+            group: user.group,
           });
 
           toast.success(response.data.Message || "Bank added successfully");
@@ -146,7 +151,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
     <>
       <div className="max-w-md mx-auto p-4">
         <h2 className="text-2xl font-bold text-center mb-6">
-          {editData ? "Edit Bank Account" : "Add Bank Account"}
+          {editData ? "Edit BK ac" : "Add BK ac"}
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -162,7 +167,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
             {
               icon: <FaRegCreditCard />,
               name: "account_number",
-              placeholder: "Account Number",
+              placeholder: "ac Number",
             },
             { icon: <FaCode />, name: "ifsc_code", placeholder: "IFSC Code" },
             {
