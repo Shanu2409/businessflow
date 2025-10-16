@@ -9,17 +9,26 @@ export async function POST(request) {
 
     const { username, password, allowed_banks, group } = await request.json();
 
+    // Validate that group is provided
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
+
     // Convert username to uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
 
-    // Check if the account already exists
+    // Check if the account already exists within the same group
     const existingAccount = await Account.findOne({
       username: uppercaseUsername,
+      group,
     });
 
     if (existingAccount) {
       return NextResponse.json(
-        { Message: "Account with this username already exists" },
+        { Message: "Account with this username already exists in this group" },
         { status: 400 }
       );
     }
@@ -51,6 +60,14 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || 20);
     const page = parseInt(searchParams.get("page") || 1);
     const group = searchParams.get("group");
+
+    // Validate that group is provided
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
 
     await connection();
 

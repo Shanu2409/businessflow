@@ -9,6 +9,15 @@ export async function DELETE(request, context) {
     const { id } = await context.params;
     const searchParams = request.nextUrl.searchParams;
     const group = searchParams.get("group");
+
+    // Validate that group is provided
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
+
     // Uncomment and modify the delete operation as needed:
     await Account.deleteOne({ username: id, group });
     return NextResponse.json({
@@ -28,6 +37,15 @@ export async function PUT(request, context) {
     const { id } = context.params;
     const searchParams = request.nextUrl.searchParams;
     const group = searchParams.get("group");
+
+    // Validate that group is provided
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
+
     const { password, allowed_banks } = await request.json();
 
     // Ensure username exists before updating
