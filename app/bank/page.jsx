@@ -217,11 +217,9 @@ const PageContent = () => {
                       <th className="px-4 py-2 border border-gray-600">
                         Group
                       </th>
-                      {user?.type === "admin" && (
-                        <th className="px-4 py-2 border border-gray-600">
-                          Actions
-                        </th>
-                      )}
+                      <th className="px-4 py-2 border border-gray-600">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -253,16 +251,14 @@ const PageContent = () => {
                           {row.current_balance}
                         </td>
                         <td className="border px-4 py-2">{row.group}</td>
-                        {user?.type === "admin" && (
-                          <td className="border px-4 py-2">
-                            <button
-                              onClick={() => handleIsEdit(row)}
-                              className="text-blue-500"
-                            >
-                              <FaEdit />
-                            </button>
-                          </td>
-                        )}
+                        <td className="border px-4 py-2">
+                          <button
+                            onClick={() => handleIsEdit(row)}
+                            className="text-blue-500"
+                          >
+                            <FaEdit />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
