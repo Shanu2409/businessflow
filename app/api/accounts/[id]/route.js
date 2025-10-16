@@ -1,5 +1,6 @@
 import connection from "@/lib/mongodb";
 import Account from "@/models/accountUser";
+import Bank from "@/models/bank";
 import { NextResponse } from "next/server";
 
 export async function DELETE(request, context) {
@@ -46,12 +47,15 @@ export async function PUT(request, context) {
       );
     }
 
-    const { password, allowed_banks } = await request.json();
+    const { password } = await request.json();
+
+    // Fetch all banks for this group
+    const allBanks = await Bank.distinct("bank_name", { group });
 
     // Ensure username exists before updating
     const updatedUser = await Account.findOneAndUpdate(
       { username: id, group },
-      { $set: { password, allowed_banks } }
+      { $set: { password, allowed_banks: allBanks } }
     );
 
     if (!updatedUser) {

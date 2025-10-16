@@ -5,35 +5,19 @@ import React, { useEffect, useState } from "react";
 import { FaUser, FaLock } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FullScreenLoader from "./FullScreenLoader";
-import BankDropdown from "./BankDropdown";
 
 const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // Password visibility toggle
   const [loading, setLoading] = useState(false);
-  const [bankList, setBankList] = useState([]);
-  const [allowedBanks, setAllowedBanks] = useState([]); // State to manage allowed banks
 
   useEffect(() => {
-    fetchBankList();
     if (editData) {
       setUsername(editData.username);
       setPassword(editData.password);
-      setAllowedBanks(editData.allowed_banks || []); // Set allowed banks if editing
     }
   }, [editData]);
-
-  const fetchBankList = async () => {
-    try {
-      const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true`
-      );
-      setBankList(responseData?.data);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
 
   const handleEdit = async (data) => {
     setLoading(true);
@@ -46,7 +30,6 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
         `/api/accounts/${data.username}?group=${user.group}`,
         {
           password: data.password,
-          allowed_banks: allowedBanks, // Send the allowed banks to the server
         }
       );
       toast.success(response?.data?.message);
@@ -61,7 +44,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!username || !password || allowedBanks.length === 0) {
+    if (!username || !password) {
       toast.error("Please fill all fields.");
       return;
     }
@@ -83,7 +66,6 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
         const response = await axios.post("/api/accounts", {
           username,
           password,
-          allowed_banks: allowedBanks, // Send the allowed banks to the server
           group: user.group,
         });
 
@@ -157,22 +139,9 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
             </button>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Allowed Banks :
-            </label>
-            {/* Bank Dropdown Component */}
-
-            <BankDropdown
-              bankList={bankList}
-              allowedBanks={allowedBanks}
-              setAllowedBanks={setAllowedBanks}
-            />
-          </div>
-
           <div className="flex items-center justify-center">
             <button
-              disabled={!username || !password || allowedBanks.length === 0}
+              disabled={!username || !password}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >
