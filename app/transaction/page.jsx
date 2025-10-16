@@ -479,11 +479,9 @@ const PageContent = () => {
                   >
                     Created On
                   </th>
-                  {/* {user?.type === "admin" && (
-                    <th className="px-4 py-2 border border-gray-600 text-sm text-center">
-                      ACTIONS
-                    </th>
-                  )} */}
+                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                    ACTIONS
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -597,27 +595,28 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row.createdAt))}
                       </td>
-                      {/* {user?.type === "admin" && (
-                        <td className="px-4 py-2 border border-gray-600 text-center">
-                          <button
-                          onClick={() => handleEdit(row)}
+                      <td className="px-4 py-2 border border-gray-600 text-center">
+                        <button
+                          onClick={() => {
+                            setEditData(row);
+                            setShowTransactionForm(true);
+                          }}
                           className="text-blue-500 mr-2"
                         >
                           <FaEdit />
                         </button>
-                          <button
-                            onClick={() => handleDelete(row._id)}
-                            className="text-red-500"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      )} */}
+                        <button
+                          onClick={() => handleDelete(row._id)}
+                          className="text-red-500"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={12} className="text-center py-4">
+                    <td colSpan={14} className="text-center py-4">
                       <div className="flex flex-col items-center">
                         <h1 className="text-2xl font-semibold text-gray-700 mb-2">
                           No transactions found

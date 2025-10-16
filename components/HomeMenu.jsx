@@ -77,15 +77,14 @@ const HomeMenu = () => {
     websiteList = JSON.parse(sessionStorage.getItem("websites"));
   }
 
-  if (user?.type === "admin") {
-    menuItems.push({
-      title: "ac",
-      link: "/account",
-      icon: <FiUser className="text-3xl" />,
-      color: "bg-gradient-to-r from-teal-400 to-teal-600",
-      description: "ac administration",
-    });
-  }
+  // Show account menu to all users
+  menuItems.push({
+    title: "ac",
+    link: "/account",
+    icon: <FiUser className="text-3xl" />,
+    color: "bg-gradient-to-r from-teal-400 to-teal-600",
+    description: "ac administration",
+  });
 
   const fetchWebsiteList = async () => {
     try {
