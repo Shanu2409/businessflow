@@ -1,13 +1,13 @@
 import connection from "@/lib/mongodb";
 import Account from "@/models/accountUser";
-import { all } from "axios";
+import Bank from "@/models/bank";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request) {
   try {
     await connection();
 
-    const { username, password, allowed_banks, group } = await request.json();
+    const { username, password, group } = await request.json();
 
     // Validate that group is provided
     if (!group) {
@@ -33,13 +33,14 @@ export async function POST(request) {
       );
     }
 
+    // Fetch all banks for this group
+    const allBanks = await Bank.distinct("bank_name", { group });
+
     const newAccount = new Account({
       username: uppercaseUsername,
       password,
       group,
-      allowed_banks: allowed_banks
-        ? allowed_banks.map((bank) => bank.toUpperCase())
-        : [], // Ensure all bank names are uppercase
+      allowed_banks: allBanks, // Automatically assign all banks
     });
 
     await newAccount.save();
