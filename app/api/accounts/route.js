@@ -20,14 +20,15 @@ export async function POST(request) {
     // Convert username to uppercase for validation
     const uppercaseUsername = username ? username.toUpperCase() : username;
 
-    // Check if the account already exists
+    // Check if the account already exists within the same group
     const existingAccount = await Account.findOne({
       username: uppercaseUsername,
+      group,
     });
 
     if (existingAccount) {
       return NextResponse.json(
-        { Message: "Account with this username already exists" },
+        { Message: "Account with this username already exists in this group" },
         { status: 400 }
       );
     }
