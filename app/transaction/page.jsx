@@ -479,9 +479,9 @@ const PageContent = () => {
                   >
                     Created On
                   </th>
-                  <th className="px-4 py-2 border border-gray-600 text-sm text-center">
+                  {/* <th className="px-4 py-2 border border-gray-600 text-sm text-center">
                     ACTIONS
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -595,7 +595,7 @@ const PageContent = () => {
                           minute: "2-digit",
                         }).format(new Date(row.createdAt))}
                       </td>
-                      <td className="px-4 py-2 border border-gray-600 text-center">
+                      {/* <td className="px-4 py-2 border border-gray-600 text-center">
                         <button
                           onClick={() => {
                             setEditData(row);
@@ -611,12 +611,12 @@ const PageContent = () => {
                         >
                           <FaTrash />
                         </button>
-                      </td>
+                      </td> */}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={14} className="text-center py-4">
+                    <td colSpan={13} className="text-center py-4">
                       <div className="flex flex-col items-center">
                         <h1 className="text-2xl font-semibold text-gray-700 mb-2">
                           No transactions found
