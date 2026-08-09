@@ -126,147 +126,149 @@ const PageContent = () => {
             </div>
           </div>
 
-          {showAddBankForm && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <AddBankForm
-                editData={editData}
-                setShowAddBankForm={setShowAddBankForm}
-                fetchData={fetchBankData}
-              />
-            </div>
-          )}
-
-          <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
-            <input
-              type="text"
-              placeholder="Search BKs..."
-              value={searchValue}
-              onChange={handleSearchChange}
-              className="w-full p-3 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            {data.length > 0 && (
-              <div className="flex justify-between items-center mb-4">
-                <span>
-                  Total: {totalData} | Page {page} of {computedTotalPages}
-                </span>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={page === 1}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronLeft />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setPage((prev) => Math.min(prev + 1, computedTotalPages))
-                    }
-                    disabled={page === computedTotalPages}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronRight />
-                  </button>
-                </div>
+          <div
+            className={`grid w-full min-w-0 gap-6 ${
+              showAddBankForm
+                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+                : "grid-cols-1"
+            }`}
+          >
+            {showAddBankForm && (
+              <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">
+                <AddBankForm
+                  editData={editData}
+                  setShowAddBankForm={setShowAddBankForm}
+                  fetchData={fetchBankData}
+                />
               </div>
             )}
 
-            {data.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead className="text-left text-white bg-secondary">
-                    <tr>
-                      <th className="px-4 py-2 border border-gray-600">S.No</th>
-                      <th
-                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
-                        onClick={() =>
-                          setSortLabel((prev) =>
-                            prev === "bank_name" ? "-bank_name" : "bank_name"
-                          )
-                        }
+            <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">
+              <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
+                <input
+                  type="text"
+                  placeholder="Search BKs..."
+                  value={searchValue}
+                  onChange={handleSearchChange}
+                  className="w-full p-3 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                {data.length > 0 && (
+                  <div className="flex justify-between items-center mb-4">
+                    <span>
+                      Total: {totalData} | Page {page} of {computedTotalPages}
+                    </span>
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={page === 1}
+                        className="p-2 bg-gray-200 rounded"
                       >
-                        BK Name
-                      </th>
-                      <th
-                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                        <FaChevronLeft />
+                      </button>
+                      <button
                         onClick={() =>
-                          setSortLabel((prev) =>
-                            prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
-                          )
+                          setPage((prev) => Math.min(prev + 1, computedTotalPages))
                         }
+                        disabled={page === computedTotalPages}
+                        className="p-2 bg-gray-200 rounded"
                       >
-                        IFSC Code
-                      </th>
-                      <th
-                        className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
-                        onClick={() =>
-                          setSortLabel((prev) =>
-                            prev === "account_number"
-                              ? "-account_number"
-                              : "account_number"
-                          )
-                        }
-                      >
-                        ac Number
-                      </th>
-                      <th className="px-4 py-2 border border-gray-600">
-                        Current Balance
-                      </th>
-                      <th className="px-4 py-2 border border-gray-600">
-                        Group
-                      </th>
-                      <th className="px-4 py-2 border border-gray-600">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((row, index) => (
-                      <tr key={row._id}>
-                        <td className="border px-4 py-2">
-                          {index + 1 + (page - 1) * itemsPerPage}
-                        </td>
-                        <td
-                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
-                          onClick={() =>
-                            router.push(`/transaction?search=${row.bank_name}`)
-                          }
-                        >
-                          {row.bank_name}
-                        </td>
-                        <td
-                          className="border px-4 py-2 cursor-pointer hover:text-blue-500 hover:underline"
-                          onClick={() =>
-                            router.push(`/transaction?search=${row.ifsc_code}`)
-                          }
-                        >
-                          {row.ifsc_code}
-                        </td>
-                        <td className="border px-4 py-2">
-                          {row.account_number}
-                        </td>
-                        <td className="border px-4 py-2">
-                          {row.current_balance}
-                        </td>
-                        <td className="border px-4 py-2">{row.group}</td>
-                        <td className="border px-4 py-2">
-                          <button
-                            onClick={() => handleIsEdit(row)}
-                            className="text-blue-500"
+                        <FaChevronRight />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {data.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead className="text-left text-white bg-secondary">
+                        <tr>
+                          <th className="px-4 py-2 border border-gray-600">S.No</th>
+                          <th
+                            className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                            onClick={() =>
+                              setSortLabel((prev) =>
+                                prev === "bank_name" ? "-bank_name" : "bank_name"
+                              )
+                            }
                           >
-                            <FaEdit />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            BK Name
+                          </th>
+                          <th
+                            className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                            onClick={() =>
+                              setSortLabel((prev) =>
+                                prev === "ifsc_code" ? "-ifsc_code" : "ifsc_code"
+                              )
+                            }
+                          >
+                            IFSC Code
+                          </th>
+                          <th
+                            className="px-4 py-2 border border-gray-600 cursor-pointer hover:underline"
+                            onClick={() =>
+                              setSortLabel((prev) =>
+                                prev === "account_number"
+                                  ? "-account_number"
+                                  : "account_number"
+                              )
+                            }
+                          >
+                            ac Number
+                          </th>
+                          <th className="px-4 py-2 border border-gray-600">
+                            Current Balance
+                          </th>
+                          <th className="px-4 py-2 border border-gray-600">
+                            Group
+                          </th>
+                          <th className="px-4 py-2 border border-gray-600">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.map((row, index) => (
+                          <tr key={row._id}>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {index + 1 + (page - 1) * itemsPerPage}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {row.bank_name}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {row.ifsc_code}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {row.account_number}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {row.current_balance}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              {row.group}
+                            </td>
+                            <td className="px-4 py-2 border border-gray-600">
+                              <button
+                                onClick={() => handleIsEdit(row)}
+                                className="text-blue-500 mr-2"
+                              >
+                                <FaEdit />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-4">No results found.</p>
+                )}
               </div>
-            ) : (
-              <p>No results found.</p>
-            )}
+            </div>
           </div>
         </div>
       </div>
