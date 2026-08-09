@@ -118,104 +118,114 @@ const PageContent = () => {
           </div>
 
           {/* Add User Form */}
-          {showAddUserForm && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <AddUserForm
-                editData={editData}
-                setShowAddUserForm={setShowAddUserForm}
-                fetchData={fetchUserData}
-              />
-            </div>
-          )}
-
-          {/* Search Bar */}
-          <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchValue}
-              onChange={handleSearchChange}
-              className="w-full p-3 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          {/* User Table */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            {data.length > 0 && (
-              <div className="flex justify-between items-center mb-4">
-                <span>
-                  Total: {totalData} | Page {page} of {computedTotalPages}
-                </span>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={page === 1}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronLeft />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setPage((prev) => Math.min(prev + 1, computedTotalPages))
-                    }
-                    disabled={page === computedTotalPages}
-                    className="p-2 bg-gray-200 rounded"
-                  >
-                    <FaChevronRight />
-                  </button>
-                </div>
+          <div
+            className={`grid w-full min-w-0 gap-6 ${
+              showAddUserForm
+                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+                : "grid-cols-1"
+            }`}
+          >
+            {showAddUserForm && (
+              <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">
+                <AddUserForm
+                  editData={editData}
+                  setShowAddUserForm={setShowAddUserForm}
+                  fetchData={fetchUserData}
+                />
               </div>
             )}
 
-            {data.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead className="text-left text-white bg-secondary">
-                  <tr>
-                    <th className="px-4 py-2 border">Username</th>
-                    <th className="px-4 py-2 border">Website</th>
-                    <th className="px-4 py-2 border">Email</th>
-                    <th className="px-4 py-2 border">Active</th>
-                    <th className="px-4 py-2 border">Created By</th>
-                    <th className="px-4 py-2 border">Group</th>
-                    <th className="px-4 py-2 border">Created At</th>
-                    <th className="px-4 py-2 border">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((row) => (
-                    <tr key={row._id}>
-                      <td className="border px-4 py-2">{row.username}</td>
-                      <td className="border px-4 py-2">{row.website_name}</td>
-                      <td className="border px-4 py-2">{row.email}</td>
-                      <td className="border px-4 py-2">
-                        {row.active ? "✅" : "❌"}
-                      </td>
-                      <td className="border px-4 py-2">{row.created_by}</td>
-                      <td className="border px-4 py-2">{row.group}</td>
-                      <td className="border px-4 py-2">
-                        {new Date(row.createdAt).toLocaleString()}
-                      </td>
-                      <td className="border px-4 py-2">
-                        <button
-                          onClick={() => handleIsEdit(row)}
-                          className="text-blue-500"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(row._id)}
-                          className="text-red-500"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No results found.</p>
-            )}
+            {/* Search Bar */}
+            <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">
+              <div className="w-full mt-4 p-4 bg-white rounded-lg shadow-md">
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchValue}
+                  onChange={handleSearchChange}
+                  className="w-full p-3 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* User Table */}
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                {data.length > 0 && (
+                  <div className="flex justify-between items-center mb-4">
+                    <span>
+                      Total: {totalData} | Page {page} of {computedTotalPages}
+                    </span>
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={page === 1}
+                        className="p-2 bg-gray-200 rounded"
+                      >
+                        <FaChevronLeft />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setPage((prev) => Math.min(prev + 1, computedTotalPages))
+                        }
+                        disabled={page === computedTotalPages}
+                        className="p-2 bg-gray-200 rounded"
+                      >
+                        <FaChevronRight />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {data.length > 0 ? (
+                  <table className="w-full border-collapse">
+                    <thead className="text-left text-white bg-secondary">
+                      <tr>
+                        <th className="px-4 py-2 border">Username</th>
+                        <th className="px-4 py-2 border">Website</th>
+                        <th className="px-4 py-2 border">Email</th>
+                        <th className="px-4 py-2 border">Active</th>
+                        <th className="px-4 py-2 border">Created By</th>
+                        <th className="px-4 py-2 border">Group</th>
+                        <th className="px-4 py-2 border">Created At</th>
+                        <th className="px-4 py-2 border">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map((row) => (
+                        <tr key={row._id}>
+                          <td className="border px-4 py-2">{row.username}</td>
+                          <td className="border px-4 py-2">{row.website_name}</td>
+                          <td className="border px-4 py-2">{row.email}</td>
+                          <td className="border px-4 py-2">
+                            {row.active ? "✅" : "❌"}
+                          </td>
+                          <td className="border px-4 py-2">{row.created_by}</td>
+                          <td className="border px-4 py-2">{row.group}</td>
+                          <td className="border px-4 py-2">
+                            {new Date(row.createdAt).toLocaleString()}
+                          </td>
+                          <td className="border px-4 py-2">
+                            <button
+                              onClick={() => handleIsEdit(row)}
+                              className="text-blue-500"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(row._id)}
+                              className="text-red-500"
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p>No results found.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
