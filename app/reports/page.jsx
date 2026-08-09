@@ -176,13 +176,29 @@ const ReportsPage = () => {
     }
   }
 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
+      setUser(userData);
+    }
+  }, []);
+
   // Fetch reference data (banks, websites, users)
   const fetchReferenceData = useCallback(async () => {
+    if (!user) return;
     try {
       const [banksRes, websitesRes, usersRes] = await Promise.all([
-        axios.get("/api/banks?onlyNames=true"),
-        axios.get("/api/websites?onlyNames=true"),
-        axios.get("/api/users?onlyNames=true"),
+        axios.get(
+          `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        ),
+        axios.get(
+          `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        ),
+        axios.get(
+          `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        ),
       ]);
 
       // Make sure we're setting arrays of strings, not objects
@@ -204,14 +220,18 @@ const ReportsPage = () => {
       console.error("Error fetching reference data:", error);
       toast.error("Failed to load filters data");
     }
-  }, []);
+  }, [user]);
 
   // Fetch report data based on selected type and filters
   const fetchReportData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const response = await axios.post("/api/reports", {
         reportType,
+        group: user.group,
+        userType: user.type,
+        createdBy: user.username,
         ...filters,
       });
 
@@ -228,7 +248,7 @@ const ReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [reportType, filters]);
+  }, [reportType, filters, user]);
 
   // Reset date filters to current month
   const resetToCurrentMonth = () => {

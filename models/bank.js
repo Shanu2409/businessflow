@@ -19,8 +19,8 @@ const bankSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Compound index for unique bank_name per group
-bankSchema.index({ bank_name: 1, group: 1 }, { unique: true });
+// Compound index for unique bank_name per created_by and group
+bankSchema.index({ bank_name: 1, created_by: 1, group: 1 }, { unique: true });
 
 const Bank = mongoose.models.bank || mongoose.model("bank", bankSchema);
 export default Bank;

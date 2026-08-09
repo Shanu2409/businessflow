@@ -59,10 +59,10 @@ const PageContent = () => {
       const { data: responseData } = await axios.get(
         `/api/websites?search=${
           search || searchQuery
-        }&page=${page}&limit=20&group=${user.group}`
+        }&page=${page}&limit=20&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
-      setData(responseData?.data);
-      setTotalData(responseData?.totalData);
+      setData(responseData?.data || []);
+      setTotalData(responseData?.totalData || 0);
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
@@ -92,9 +92,12 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
-      const response = await axios.get(`/api/websites/export`, {
-        responseType: "blob",
-      });
+      const response = await axios.get(
+        `/api/websites/export?group=${user.group}&userType=${user.type}&createdBy=${user.username}`,
+        {
+          responseType: "blob",
+        }
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const a = document.createElement("a");
       a.href = url;

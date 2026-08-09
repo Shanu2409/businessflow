@@ -4,13 +4,11 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true,
     set: (value) => (value ? value.toUpperCase() : value),
   },
   website_name: {
     type: String,
     required: false,
-    unique: false,
     set: (value) => (value ? value.toUpperCase() : value),
   },
   email: { type: String, required: false },
@@ -19,6 +17,8 @@ const userSchema = new mongoose.Schema({
   group: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
+
+userSchema.index({ username: 1, created_by: 1, group: 1 }, { unique: true });
 
 const UserModal =
   mongoose.models.userClient || mongoose.model("userClient", userSchema);

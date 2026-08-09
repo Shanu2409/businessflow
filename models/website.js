@@ -14,8 +14,8 @@ const websiteSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Compound index for unique website_name per group
-websiteSchema.index({ website_name: 1, group: 1 }, { unique: true });
+// Compound index for unique website_name per created_by and group
+websiteSchema.index({ website_name: 1, created_by: 1, group: 1 }, { unique: true });
 
 const Website =
   mongoose.models.website || mongoose.model("website", websiteSchema);

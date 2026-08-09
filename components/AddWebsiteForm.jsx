@@ -47,16 +47,18 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
   const fetchWebsiteList = async () => {
     setLoading(true);
     try {
+      let user = {};
+      if (typeof window !== "undefined") {
+        user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      }
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true`
+        `/api/websites?onlyNames=true&group=${user?.group}&userType=${user?.type}&createdBy=${user?.username}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
       }
-
-      console.log(responseData);
     } catch (error) {
-      console.error("Error fetching bank data:", error);
+      console.error("Error fetching website data:", error);
     }
 
     setLoading(false);

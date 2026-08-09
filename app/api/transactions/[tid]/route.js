@@ -8,10 +8,8 @@ export async function DELETE(request, context) {
   try {
     await connection();
 
-    // Get transaction ID from params
-    const { tid } = context.params;
+    const { tid } = await context.params;
 
-    // Fetch the transaction details before deleting
     const transaction = await Transaction.findById(tid);
     if (!transaction) {
       return NextResponse.json(
@@ -20,36 +18,38 @@ export async function DELETE(request, context) {
       );
     }
 
-    const { bank_name, website_name, transaction_type, amount, group } =
+    const { bank_name, website_name, transaction_type, amount, group, created_by } =
       transaction;
 
-    // Convert amount to a number to ensure calculations are correct
     const numericAmount = Number(amount);
 
-    // Reverse the transaction effect
+    // Try finding exact bank & website matching created_by
+    const bankFilter = { bank_name, group };
+    if (created_by) bankFilter.created_by = created_by;
+
+    const websiteFilter = { website_name, group };
+    if (created_by) websiteFilter.created_by = created_by;
+
     if (transaction_type === "Deposit") {
-      // If it was a deposit, subtract the amount from the bank and add back to the website
       await Bank.updateOne(
-        { bank_name, group },
+        bankFilter,
         { $inc: { current_balance: -numericAmount } }
       );
       await Website.updateOne(
-        { website_name, group },
+        websiteFilter,
         { $inc: { current_balance: numericAmount } }
       );
     } else if (transaction_type === "Withdraw") {
-      // If it was a withdraw, add the amount back to the bank and subtract from the website
       await Bank.updateOne(
-        { bank_name, group },
+        bankFilter,
         { $inc: { current_balance: numericAmount } }
       );
       await Website.updateOne(
-        { website_name, group },
+        websiteFilter,
         { $inc: { current_balance: -numericAmount } }
       );
     }
 
-    // Now delete the transaction
     await Transaction.deleteOne({ _id: tid, group });
 
     return NextResponse.json({

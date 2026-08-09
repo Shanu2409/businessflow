@@ -10,48 +10,72 @@ export async function POST(request) {
   try {
     await connection();
     const filters = await request.json();
-    const { reportType, startDate, endDate, startTime, endTime, groupBy, bankFilter, websiteFilter, userFilter, sortBy = "date", sortOrder = "desc" } = filters;
+    const {
+      reportType,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      groupBy,
+      bankFilter,
+      websiteFilter,
+      userFilter,
+      group,
+      userType = "user",
+      createdBy = "",
+      creatorFilter = "",
+      sortBy = "date",
+      sortOrder = "desc",
+    } = filters;
 
-    // Build date filter if date range is specified
+    const userIsolationFilter = {};
+    if (group) userIsolationFilter.group = group;
+
+    if (userType === "user" && createdBy) {
+      userIsolationFilter.created_by = createdBy.toUpperCase();
+    } else if (creatorFilter) {
+      userIsolationFilter.created_by = creatorFilter.toUpperCase();
+    }
+
     const dateFilter = {};
     if (startDate) {
-      // If startTime is provided, use it; otherwise default to start of day
-      const startDateTime = startTime ? `${startDate}T${startTime}:00` : `${startDate}T00:00:00`;
+      const startDateTime = startTime
+        ? `${startDate}T${startTime}:00`
+        : `${startDate}T00:00:00`;
       dateFilter.createdAt = { $gte: new Date(startDateTime) };
     }
     if (endDate) {
-      // If endTime is provided, use it; otherwise default to end of day
-      const endDateTime = endTime ? `${endDate}T${endTime}:00` : `${endDate}T23:59:59`;
+      const endDateTime = endTime
+        ? `${endDate}T${endTime}:00`
+        : `${endDate}T23:59:59`;
       dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDateTime) };
     }
 
-    // Switch based on report type
     switch (reportType) {
       case "transactionSummary": {
-        // Apply filters for transaction summary
         const matchQuery = {
+          ...userIsolationFilter,
           ...dateFilter,
           ...(bankFilter && { bank_name: bankFilter }),
           ...(websiteFilter && { website_name: websiteFilter }),
-          ...(userFilter && { username: userFilter })
+          ...(userFilter && { username: userFilter }),
         };
 
-        // Define the grouping field based on groupBy parameter
         let groupField = {};
-        switch(groupBy) {
+        switch (groupBy) {
           case "day":
-            groupField = { 
-              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } 
+            groupField = {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
             };
             break;
           case "month":
-            groupField = { 
-              $dateToString: { format: "%Y-%m", date: "$createdAt" } 
+            groupField = {
+              $dateToString: { format: "%Y-%m", date: "$createdAt" },
             };
             break;
           case "year":
-            groupField = { 
-              $dateToString: { format: "%Y", date: "$createdAt" } 
+            groupField = {
+              $dateToString: { format: "%Y", date: "$createdAt" },
             };
             break;
           case "bank":
@@ -64,69 +88,80 @@ export async function POST(request) {
             groupField = "$username";
             break;
           default:
-            groupField = { 
-              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } 
+            groupField = {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
             };
         }
 
-        // Run aggregation pipeline
         const transactions = await Transaction.aggregate([
           { $match: matchQuery },
-          { 
+          {
             $group: {
               _id: groupField,
               totalAmount: { $sum: "$amount" },
-              depositAmount: { 
+              depositAmount: {
                 $sum: {
-                  $cond: [{ $eq: ["$transaction_type", "Deposit"] }, "$amount", 0]
-                }
+                  $cond: [{ $eq: ["$transaction_type", "Deposit"] }, "$amount", 0],
+                },
               },
-              withdrawAmount: { 
+              withdrawAmount: {
                 $sum: {
-                  $cond: [{ $eq: ["$transaction_type", "Withdraw"] }, "$amount", 0]
-                }
+                  $cond: [{ $eq: ["$transaction_type", "Withdraw"] }, "$amount", 0],
+                },
               },
               count: { $sum: 1 },
-              // Keep the first timestamp for each group for reference
-              createdAt: { $min: "$createdAt" }  // Using $min instead of $first
-            }
+              createdAt: { $min: "$createdAt" },
+            },
           },
-          { 
+          {
             $project: {
               _id: 0,
-              date: "$_id", // Change label to date to match frontend expectations
+              date: "$_id",
               totalAmount: 1,
               depositAmount: 1,
               withdrawAmount: 1,
               netFlow: { $subtract: ["$depositAmount", "$withdrawAmount"] },
               count: 1,
-              // Include min and max timestamps for this group to show time information
-              createdAt: "$createdAt"  // No need for $first here, just pass through the value
-            }
+              createdAt: "$createdAt",
+            },
           },
-          { 
-            $sort: { 
-              [sortBy === "date" ? "date" : sortBy]: sortOrder === "desc" ? -1 : 1 
-            } 
-          }
+          {
+            $sort: {
+              [sortBy === "date" ? "date" : sortBy]: sortOrder === "desc" ? -1 : 1,
+            },
+          },
         ]);
 
         return NextResponse.json({
           success: true,
           data: transactions,
           reportType: "transactionSummary",
-          groupBy
+          groupBy,
         });
       }
-      
-      case "balanceSummary": {
-        // Get current balances for banks and websites
-        const banks = await Bank.find({}, { bank_name: 1, current_balance: 1, _id: 0 });
-        const websites = await Website.find({}, { website_name: 1, current_balance: 1, _id: 0 });
 
-        // Calculate totals
-        const totalBankBalance = banks.reduce((sum, bank) => sum + bank.current_balance, 0);
-        const totalWebsiteBalance = websites.reduce((sum, website) => sum + website.current_balance, 0);
+      case "balanceSummary": {
+        const banks = await Bank.find(userIsolationFilter, {
+          bank_name: 1,
+          current_balance: 1,
+          created_by: 1,
+          _id: 0,
+        });
+        const websites = await Website.find(userIsolationFilter, {
+          website_name: 1,
+          current_balance: 1,
+          created_by: 1,
+          _id: 0,
+        });
+
+        const totalBankBalance = banks.reduce(
+          (sum, bank) => sum + bank.current_balance,
+          0
+        );
+        const totalWebsiteBalance = websites.reduce(
+          (sum, website) => sum + website.current_balance,
+          0
+        );
 
         return NextResponse.json({
           success: true,
@@ -135,37 +170,37 @@ export async function POST(request) {
             websites: websites.sort((a, b) => b.current_balance - a.current_balance),
             totalBankBalance,
             totalWebsiteBalance,
-            netBalance: totalBankBalance - totalWebsiteBalance
+            netBalance: totalBankBalance - totalWebsiteBalance,
           },
-          reportType: "balanceSummary"
+          reportType: "balanceSummary",
         });
       }
-      
+
       case "userActivity": {
-        // Filter for user activity
         const matchQuery = {
+          ...userIsolationFilter,
           ...dateFilter,
-          ...(userFilter && { username: userFilter })
+          ...(userFilter && { username: userFilter }),
         };
 
         const userActivity = await Transaction.aggregate([
           { $match: matchQuery },
-          { 
+          {
             $group: {
               _id: "$username",
               totalTransactions: { $sum: 1 },
               totalAmount: { $sum: "$amount" },
               lastActivity: { $max: "$createdAt" },
-              firstActivity: { $min: "$createdAt" }
-            }
+              firstActivity: { $min: "$createdAt" },
+            },
           },
           {
             $lookup: {
-              from: "userclients", // Collection name for UserModal
+              from: "userclients",
               localField: "_id",
               foreignField: "username",
-              as: "userDetails"
-            }
+              as: "userDetails",
+            },
           },
           {
             $project: {
@@ -176,46 +211,52 @@ export async function POST(request) {
               totalAmount: 1,
               lastActivity: 1,
               firstActivity: 1,
-              daysActive: { 
+              daysActive: {
                 $divide: [
                   { $subtract: ["$lastActivity", "$firstActivity"] },
-                  1000 * 60 * 60 * 24 // Convert milliseconds to days
-                ]
-              }
-            }
+                  1000 * 60 * 60 * 24,
+                ],
+              },
+            },
           },
-          { $sort: { [sortBy === "date" ? "lastActivity" : sortBy]: sortOrder === "desc" ? -1 : 1 } }
+          {
+            $sort: {
+              [sortBy === "date" ? "lastActivity" : sortBy]:
+                sortOrder === "desc" ? -1 : 1,
+            },
+          },
         ]);
 
         return NextResponse.json({
           success: true,
           data: userActivity,
-          reportType: "userActivity"
+          reportType: "userActivity",
         });
       }
 
       case "trendAnalysis": {
         const matchQuery = {
+          ...userIsolationFilter,
           ...dateFilter,
           ...(bankFilter && { bank_name: bankFilter }),
           ...(websiteFilter && { website_name: websiteFilter }),
-          ...(userFilter && { username: userFilter })
+          ...(userFilter && { username: userFilter }),
         };
 
-        // Group by dates to create trend data
-        const dateFormat = groupBy === "month" ? "%Y-%m" : groupBy === "year" ? "%Y" : "%Y-%m-%d";
-        
+        const dateFormat =
+          groupBy === "month" ? "%Y-%m" : groupBy === "year" ? "%Y" : "%Y-%m-%d";
+
         const trendData = await Transaction.aggregate([
           { $match: matchQuery },
           {
             $group: {
               _id: {
                 date: { $dateToString: { format: dateFormat, date: "$createdAt" } },
-                type: "$transaction_type"
+                type: "$transaction_type",
               },
               totalAmount: { $sum: "$amount" },
-              count: { $sum: 1 }
-            }
+              count: { $sum: 1 },
+            },
           },
           {
             $group: {
@@ -224,30 +265,39 @@ export async function POST(request) {
                 $push: {
                   type: "$_id.type",
                   amount: "$totalAmount",
-                  count: "$count"
-                }
-              }
-            }
+                  count: "$count",
+                },
+              },
+            },
           },
           {
             $addFields: {
-              dateForSort: { $toDate: { $concat: ["$_id", "T00:00:00Z"] } }
-            }  
+              dateForSort: { $toDate: { $concat: ["$_id", "T00:00:00Z"] } },
+            },
           },
           {
-            $sort: { dateForSort: 1 }
+            $sort: { dateForSort: 1 },
           },
           {
             $lookup: {
               from: "transactions",
               let: { date_string: "$_id" },
               pipeline: [
-                { $match: { $expr: { $eq: [{ $dateToString: { format: dateFormat, date: "$createdAt" } }, "$$date_string"] } } },
+                {
+                  $match: {
+                    $expr: {
+                      $eq: [
+                        { $dateToString: { format: dateFormat, date: "$createdAt" } },
+                        "$$date_string",
+                      ],
+                    },
+                  },
+                },
                 { $sort: { createdAt: 1 } },
-                { $limit: 1 }
+                { $limit: 1 },
               ],
-              as: "firstTransaction"
-            }
+              as: "firstTransaction",
+            },
           },
           {
             $project: {
@@ -261,10 +311,16 @@ export async function POST(request) {
                   in: {
                     $add: [
                       "$$value",
-                      { $cond: [{ $eq: ["$$this.type", "Deposit"] }, "$$this.amount", 0] }
-                    ]
-                  }
-                }
+                      {
+                        $cond: [
+                          { $eq: ["$$this.type", "Deposit"] },
+                          "$$this.amount",
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                },
               },
               withdrawAmount: {
                 $reduce: {
@@ -273,10 +329,16 @@ export async function POST(request) {
                   in: {
                     $add: [
                       "$$value",
-                      { $cond: [{ $eq: ["$$this.type", "Withdraw"] }, "$$this.amount", 0] }
-                    ]
-                  }
-                }
+                      {
+                        $cond: [
+                          { $eq: ["$$this.type", "Withdraw"] },
+                          "$$this.amount",
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                },
               },
               depositCount: {
                 $reduce: {
@@ -285,10 +347,16 @@ export async function POST(request) {
                   in: {
                     $add: [
                       "$$value",
-                      { $cond: [{ $eq: ["$$this.type", "Deposit"] }, "$$this.count", 0] }
-                    ]
-                  }
-                }
+                      {
+                        $cond: [
+                          { $eq: ["$$this.type", "Deposit"] },
+                          "$$this.count",
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                },
               },
               withdrawCount: {
                 $reduce: {
@@ -297,68 +365,92 @@ export async function POST(request) {
                   in: {
                     $add: [
                       "$$value",
-                      { $cond: [{ $eq: ["$$this.type", "Withdraw"] }, "$$this.count", 0] }
-                    ]
-                  }
-                }
-              }
-            }
+                      {
+                        $cond: [
+                          { $eq: ["$$this.type", "Withdraw"] },
+                          "$$this.count",
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            },
           },
           {
             $addFields: {
               netAmount: { $subtract: ["$depositAmount", "$withdrawAmount"] },
-              netCount: { $subtract: ["$depositCount", "$withdrawCount"] }
-            }
+              netCount: { $subtract: ["$depositCount", "$withdrawCount"] },
+            },
           },
-          { $sort: { date: 1 } }
+          { $sort: { date: 1 } },
         ]);
 
         return NextResponse.json({
           success: true,
           data: trendData,
           reportType: "trendAnalysis",
-          groupBy
+          groupBy,
         });
       }
 
       case "systemOverview": {
-        // Get counts from different collections
-        const bankCount = await Bank.countDocuments();
-        const websiteCount = await Website.countDocuments();
-        const userCount = await UserModal.countDocuments();
-        const accountCount = await Account.countDocuments();
-        const transactionCount = await Transaction.countDocuments();
+        const bankCount = await Bank.countDocuments(userIsolationFilter);
+        const websiteCount = await Website.countDocuments(userIsolationFilter);
+        const userCount = await UserModal.countDocuments(userIsolationFilter);
+        const accountCount = await Account.countDocuments({
+          ...(group && { group }),
+          type: "user",
+        });
+        const transactionCount = await Transaction.countDocuments(
+          userIsolationFilter
+        );
 
-        // Get all banks and websites with balances
-        const banks = await Bank.find({}, { bank_name: 1, current_balance: 1, _id: 0 }).sort({ current_balance: -1 });
-        const websites = await Website.find({}, { website_name: 1, current_balance: 1, _id: 0 }).sort({ current_balance: -1 });
+        const banks = await Bank.find(userIsolationFilter, {
+          bank_name: 1,
+          current_balance: 1,
+          _id: 0,
+        }).sort({ current_balance: -1 });
 
-        // Get total balances
+        const websites = await Website.find(userIsolationFilter, {
+          website_name: 1,
+          current_balance: 1,
+          _id: 0,
+        }).sort({ current_balance: -1 });
+
         const bankAggregate = await Bank.aggregate([
-          { $group: { _id: null, totalBalance: { $sum: "$current_balance" } } }
+          { $match: userIsolationFilter },
+          { $group: { _id: null, totalBalance: { $sum: "$current_balance" } } },
         ]);
 
         const websiteAggregate = await Website.aggregate([
-          { $group: { _id: null, totalBalance: { $sum: "$current_balance" } } }
+          { $match: userIsolationFilter },
+          { $group: { _id: null, totalBalance: { $sum: "$current_balance" } } },
         ]);
 
-        const totalBankBalance = bankAggregate.length > 0 ? bankAggregate[0].totalBalance : 0;
-        const totalWebsiteBalance = websiteAggregate.length > 0 ? websiteAggregate[0].totalBalance : 0;
+        const totalBankBalance =
+          bankAggregate.length > 0 ? bankAggregate[0].totalBalance : 0;
+        const totalWebsiteBalance =
+          websiteAggregate.length > 0 ? websiteAggregate[0].totalBalance : 0;
 
-        // Get transaction volumes
         const transactionVolume = await Transaction.aggregate([
+          { $match: userIsolationFilter },
           {
             $group: {
               _id: "$transaction_type",
               totalAmount: { $sum: "$amount" },
-              count: { $sum: 1 }
-            }
-          }
+              count: { $sum: 1 },
+            },
+          },
         ]);
 
-        // Process transaction volume data
-        const depositVolume = transactionVolume.find(t => t._id === "Deposit") || { totalAmount: 0, count: 0 };
-        const withdrawVolume = transactionVolume.find(t => t._id === "Withdraw") || { totalAmount: 0, count: 0 };
+        const depositVolume = transactionVolume.find(
+          (t) => t._id === "Deposit"
+        ) || { totalAmount: 0, count: 0 };
+        const withdrawVolume = transactionVolume.find(
+          (t) => t._id === "Withdraw"
+        ) || { totalAmount: 0, count: 0 };
 
         return NextResponse.json({
           success: true,
@@ -368,43 +460,45 @@ export async function POST(request) {
               websiteCount,
               userCount,
               accountCount,
-              transactionCount
+              transactionCount,
             },
             banks,
             websites,
             balances: {
               totalBankBalance,
               totalWebsiteBalance,
-              netBalance: totalBankBalance - totalWebsiteBalance
+              netBalance: totalBankBalance - totalWebsiteBalance,
             },
             transactions: {
               totalDeposits: depositVolume.totalAmount,
               depositCount: depositVolume.count,
               totalWithdrawals: withdrawVolume.totalAmount,
               withdrawalCount: withdrawVolume.count,
-              netFlow: depositVolume.totalAmount - withdrawVolume.totalAmount
-            }
+              netFlow: depositVolume.totalAmount - withdrawVolume.totalAmount,
+            },
           },
-          reportType: "systemOverview"
+          reportType: "systemOverview",
         });
       }
 
       default:
-        return NextResponse.json({
-          success: false,
-          error: "Invalid report type provided"
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid report type provided",
+          },
+          { status: 400 }
+        );
     }
   } catch (error) {
     console.error("Error generating report:", error);
     return NextResponse.json(
-      { success: false, error: error.message }, 
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
 }
 
-// For exporting reports data to CSV or Excel format
 export async function GET(request) {
   try {
     await connection();
@@ -413,31 +507,40 @@ export async function GET(request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const format = searchParams.get("format") || "json";
+    const group = searchParams.get("group");
+    const userType = searchParams.get("userType") || "user";
+    const createdBy = searchParams.get("createdBy") || searchParams.get("created_by") || "";
 
-    // Build date filter if date range is specified
-    const dateFilter = {};
+    const filter = {};
+    if (group) filter.group = group;
+    if (userType === "user" && createdBy) {
+      filter.created_by = createdBy.toUpperCase();
+    } else if (createdBy) {
+      filter.created_by = createdBy.toUpperCase();
+    }
+
     if (startDate) {
-      dateFilter.createdAt = { $gte: new Date(startDate) };
+      filter.createdAt = { $gte: new Date(startDate) };
     }
     if (endDate) {
-      dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDate + "T23:59:59") };
+      filter.createdAt = {
+        ...filter.createdAt,
+        $lte: new Date(endDate + "T23:59:59"),
+      };
     }
 
-    // Get transactions based on date filter
-    const transactions = await Transaction.find(dateFilter).sort({ createdAt: -1 });
+    const transactions = await Transaction.find(filter).sort({ createdAt: -1 });
 
-    // For now, we return JSON. In a real implementation, you would
-    // convert data to CSV/Excel based on the requested format
     return NextResponse.json({
       success: true,
       data: transactions,
       reportType,
-      format
+      format,
     });
   } catch (error) {
     console.error("Error exporting report:", error);
     return NextResponse.json(
-      { success: false, error: error.message }, 
+      { success: false, error: error.message },
       { status: 500 }
     );
   }

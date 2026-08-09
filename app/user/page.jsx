@@ -54,7 +54,7 @@ const PageContent = () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}`
+        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -63,7 +63,7 @@ const PageContent = () => {
       toast.error("Failed to fetch user data.");
     }
     setLoading(false);
-  }, [search, page, user]); // ✅ Depend on `search` and `page`
+  }, [search, page, user, itemsPerPage]);
 
   useEffect(() => {
     fetchUserData();

@@ -7,25 +7,31 @@ export async function GET(request) {
   try {
     await connection();
 
-    // Fetch bank data (excluding _id and __v)
-    const banks = await Bank.find().select(
-      "bank_name ifsc_code current_balance -_id"
+    const searchParams = request.nextUrl.searchParams;
+    const group = searchParams.get("group");
+    const userType = searchParams.get("userType") || "user";
+    const createdBy = searchParams.get("createdBy") || searchParams.get("created_by") || "";
+
+    const query = {};
+    if (group) query.group = group;
+    if (userType === "user" && createdBy) {
+      query.created_by = createdBy.toUpperCase();
+    } else if (userType === "admin" && createdBy) {
+      query.created_by = createdBy.toUpperCase();
+    }
+
+    const banks = await Bank.find(query).select(
+      "bank_name ifsc_code account_number current_balance created_by group -_id"
     );
 
-    // Convert MongoDB data to an array of objects
     const bankData = banks.map((bank) => bank.toObject());
 
-    // Create a new workbook and worksheet
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(bankData);
-
-    // Append the worksheet to the workbook
     XLSX.utils.book_append_sheet(wb, ws, "Banks");
 
-    // Write workbook to buffer
     const buffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
 
-    // Return the file as a response
     return new Response(buffer, {
       headers: {
         "Content-Disposition": 'attachment; filename="banks.xlsx"',

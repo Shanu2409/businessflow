@@ -49,7 +49,7 @@ const PageContent = () => {
     setLoading(true);
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -58,7 +58,7 @@ const PageContent = () => {
       toast.error("Failed to fetch bank data.");
     }
     setLoading(false);
-  }, [search, page, sortLabel, user]);
+  }, [search, page, sortLabel, user, itemsPerPage]);
 
   useEffect(() => {
     fetchBankData();
@@ -76,7 +76,7 @@ const PageContent = () => {
   const handleExport = async () => {
     try {
       const response = await axios.get(
-        `/api/banks/export?group=${user.group}`,
+        `/api/banks/export?group=${user.group}&userType=${user.type}&createdBy=${user.username}`,
         {
           responseType: "blob",
         }

@@ -40,10 +40,14 @@ const PageContent = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userData = JSON.parse(sessionStorage.getItem("user"));
+      const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
       setUser(userData);
+      if (userData && userData.type !== "admin") {
+        toast.error("Access denied. Admin rights required.");
+        router.push("/");
+      }
     }
-  }, []);
+  }, [router]);
 
   // Update search state when debounced value changes
   useEffect(() => {
@@ -53,7 +57,6 @@ const PageContent = () => {
   const handleSearchChange = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchValue(value); // Update input field value immediately
-    // No immediate setSearch - handled by debounce effect
   };
 
   const itemsPerPage = 20;
@@ -67,22 +70,23 @@ const PageContent = () => {
           search || searchParams.get("search") || ""
         }&page=${page}&limit=${itemsPerPage}&group=${user.group}`
       );
-      setData(responseData?.data);
-      setTotalData(responseData?.totalData);
+      setData(responseData?.data || []);
+      setTotalData(responseData?.totalData || 0);
     } catch (error) {
-      console.error("Error fetching bank data:", error);
+      console.error("Error fetching account data:", error);
     }
     setLoading(false);
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this BK ac?")) {
+    if (confirm(`Are you sure you want to delete account ${id}?`)) {
       try {
         await axios.delete(`/api/accounts/${id}?group=${user.group}`);
-        toast.success("BK ac deleted successfully.");
+        toast.success("Account deleted successfully.");
         fetchBankData();
       } catch (error) {
-        console.error("Error deleting bank:", error);
+        console.error("Error deleting account:", error);
+        toast.error("Failed to delete account.");
       }
     }
   };

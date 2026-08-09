@@ -2,7 +2,7 @@ import connection from "@/lib/mongodb";
 import Bank from "@/models/bank";
 import Transaction from "@/models/transaction";
 import Website from "@/models/website";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
@@ -18,7 +18,6 @@ export async function POST(request) {
       group,
     } = await request.json();
 
-    // Ensure all names are uppercase for consistency
     const uppercaseUsername = username ? username.toUpperCase() : username;
     const uppercaseWebsiteName = website_name
       ? website_name.toUpperCase()
@@ -28,57 +27,80 @@ export async function POST(request) {
       ? created_by.toUpperCase()
       : created_by;
 
-    // Ensure amount is a number
     const numericAmount = Number(amount);
 
-    // Fetch bank and website balances
-    const bank = await Bank.findOne(
-      { bank_name: uppercaseBankName, group },
-      { current_balance: 1 }
-    );
-    const website = await Website.findOne(
-      { website_name: uppercaseWebsiteName, group },
-      { current_balance: 1 }
-    );
-
-    // Ensure fetched balances are numbers
-    const bankBalance = bank ? Number(bank.current_balance) : 0;
-    const websiteBalance = website ? Number(website.current_balance) : 0;
-
-    // Perform transaction updates
-    if (transaction_type === "Deposit") {
-      await Bank.updateOne(
-        { bank_name: uppercaseBankName, group },
-        {
-          $inc: { current_balance: numericAmount },
-          $set: { check: false }, // Corrected placement
-        },
-        { upsert: false }
+    if (!group) {
+      return NextResponse.json(
+        { message: "Group is required" },
+        { status: 400 }
       );
-
-      await Website.updateOne(
-        { website_name: uppercaseWebsiteName, group },
-        { $inc: { current_balance: -numericAmount } },
-        { upsert: false }
-      );
-    } else if (transaction_type === "Withdraw") {
-      await Bank.updateOne(
-        { bank_name: uppercaseBankName, group },
-        {
-          $inc: { current_balance: -numericAmount },
-          $set: { check: false }, // Corrected placement
-        },
-        { upsert: false }
-      );
-
-      await Website.updateOne(
-        { website_name: uppercaseWebsiteName, group },
-        { $inc: { current_balance: numericAmount } },
-        { upsert: false }
+    }
+    if (!uppercaseCreatedBy) {
+      return NextResponse.json(
+        { message: "Created by user is required" },
+        { status: 400 }
       );
     }
 
-    // Calculate the new balances dynamically
+    // Fetch bank and website balances specifically for this creator & group
+    let bank = await Bank.findOne(
+      { bank_name: uppercaseBankName, group, created_by: uppercaseCreatedBy },
+      { current_balance: 1 }
+    );
+
+    let website = await Website.findOne(
+      { website_name: uppercaseWebsiteName, group, created_by: uppercaseCreatedBy },
+      { current_balance: 1 }
+    );
+
+    // Fallback: If admin is operating without matching created_by, match by bank_name & group
+    if (!bank) {
+      bank = await Bank.findOne(
+        { bank_name: uppercaseBankName, group },
+        { current_balance: 1, created_by: 1 }
+      );
+    }
+    if (!website) {
+      website = await Website.findOne(
+        { website_name: uppercaseWebsiteName, group },
+        { current_balance: 1, created_by: 1 }
+      );
+    }
+
+    const bankBalance = bank ? Number(bank.current_balance) : 0;
+    const websiteBalance = website ? Number(website.current_balance) : 0;
+
+    const targetCreator = bank ? bank.created_by : uppercaseCreatedBy;
+
+    // Perform transaction balance updates
+    if (transaction_type === "Deposit") {
+      await Bank.updateOne(
+        { bank_name: uppercaseBankName, group, created_by: targetCreator },
+        {
+          $inc: { current_balance: numericAmount },
+          $set: { check: false },
+        }
+      );
+
+      await Website.updateOne(
+        { website_name: uppercaseWebsiteName, group, created_by: targetCreator },
+        { $inc: { current_balance: -numericAmount } }
+      );
+    } else if (transaction_type === "Withdraw") {
+      await Bank.updateOne(
+        { bank_name: uppercaseBankName, group, created_by: targetCreator },
+        {
+          $inc: { current_balance: -numericAmount },
+          $set: { check: false },
+        }
+      );
+
+      await Website.updateOne(
+        { website_name: uppercaseWebsiteName, group, created_by: targetCreator },
+        { $inc: { current_balance: numericAmount } }
+      );
+    }
+
     const newBankBalance =
       transaction_type === "Deposit"
         ? bankBalance + numericAmount
@@ -89,16 +111,15 @@ export async function POST(request) {
         ? websiteBalance - numericAmount
         : websiteBalance + numericAmount;
 
-    // Save transaction with calculated balances
     const newTransaction = new Transaction({
       bank_name: uppercaseBankName,
       username: uppercaseUsername,
       website_name: uppercaseWebsiteName,
       transaction_type,
       old_bank_balance: bankBalance,
-      effective_balance: newBankBalance, // Use calculated value
+      effective_balance: newBankBalance,
       old_website_balance: websiteBalance,
-      new_website_balance: newWebsiteBalance, // Use calculated value
+      new_website_balance: newWebsiteBalance,
       amount: numericAmount,
       created_by: uppercaseCreatedBy,
       group,
@@ -127,10 +148,11 @@ export async function GET(request) {
     const startTime = searchParams.get("startTime");
     const endTime = searchParams.get("endTime");
     const group = searchParams.get("group");
+    const userType = searchParams.get("userType") || "user";
+    const createdBy = searchParams.get("createdBy") || searchParams.get("created_by") || "";
 
     await connection();
 
-    // Convert search term to uppercase for consistent searching
     const uppercaseSearch = search ? search.toUpperCase() : "";
 
     const query = {
@@ -142,7 +164,12 @@ export async function GET(request) {
       ],
     };
 
-    // Add date-time filtering if provided
+    if (userType === "user" && createdBy) {
+      query.created_by = createdBy.toUpperCase();
+    } else if (userType === "admin" && createdBy) {
+      query.created_by = createdBy.toUpperCase();
+    }
+
     if (startDate) {
       const startDateTime = startTime
         ? `${startDate}T${startTime}:00`
@@ -157,18 +184,16 @@ export async function GET(request) {
       query.createdAt = { ...query.createdAt, $lte: new Date(endDateTime) };
     }
 
-    // Get the total count of documents matching the query
     const totalData = await Transaction.countDocuments(query);
 
-    // Get paginated bank data
-    const banks = await Transaction.find(query, {
+    const transactions = await Transaction.find(query, {
       __v: 0,
     })
       .sort(sort)
       .limit(limit)
       .skip((page - 1) * limit);
 
-    return NextResponse.json({ data: banks, totalData });
+    return NextResponse.json({ data: transactions, totalData });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });
@@ -184,7 +209,6 @@ export async function PUT(request) {
 
     await connection();
 
-    // Convert values to uppercase for relevant fields
     let valueToUpdate = value;
     if (
       ["bank_name", "username", "website_name", "created_by"].includes(field)
@@ -197,7 +221,7 @@ export async function PUT(request) {
       { $set: { [field]: valueToUpdate } }
     );
 
-    return NextResponse.json({ Message: "Data updated successfully" });
+    return NextResponse.json({ Message: "Data updated successfully", result });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });

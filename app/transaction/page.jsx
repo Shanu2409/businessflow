@@ -47,13 +47,17 @@ const PageContent = () => {
     }
   }, []);
 
+  const [selectedCreator, setSelectedCreator] = useState("");
+  const [operatorsList, setOperatorsList] = useState([]);
+
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
+      const creatorParam = user.type === "admin" ? selectedCreator : user.username;
       const { data: responseData } = await axios.get(
-        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}&group=${user.group}`
+        `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -61,7 +65,7 @@ const PageContent = () => {
       toast.error("Failed to load transactions.");
     }
     setLoading(false);
-  }, [search, page, sortLabel, user]);
+  }, [search, page, sortLabel, user, selectedCreator]);
 
   // Update useEffect to listen for debounced search changes
   useEffect(() => {
@@ -73,15 +77,16 @@ const PageContent = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  // Fetch banks, users, websites for dropdowns
+  // Fetch banks, users, websites for dropdowns, and operator list if admin
   useEffect(() => {
     if (!user) return;
     const fetchDropdownData = async () => {
       try {
+        const creatorParam = user.type === "admin" ? selectedCreator : user.username;
         const [banksRes, usersRes, websitesRes] = await Promise.all([
-          axios.get(`/api/banks?onlyNames=true&group=${user.group}`),
-          axios.get(`/api/users?onlyNames=true&group=${user.group}`),
-          axios.get(`/api/websites?onlyNames=true&group=${user.group}`),
+          axios.get(`/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
+          axios.get(`/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
+          axios.get(`/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
         ]);
         sessionStorage.setItem("banks", JSON.stringify(banksRes.data.data));
         sessionStorage.setItem("users", JSON.stringify(usersRes.data.data));
@@ -89,12 +94,17 @@ const PageContent = () => {
           "websites",
           JSON.stringify(websitesRes.data.data)
         );
+
+        if (user.type === "admin") {
+          const accountsRes = await axios.get(`/api/accounts?group=${user.group}`);
+          setOperatorsList(accountsRes.data?.data?.map((u) => u.username) || []);
+        }
       } catch (error) {
         console.error("Error fetching dropdown data:", error);
       }
     };
     fetchDropdownData();
-  }, [user]);
+  }, [user, selectedCreator]);
 
   // Ensure search value updates but doesn't immediately trigger fetch
   const handleSearchChange = (e) => {
@@ -287,13 +297,29 @@ const PageContent = () => {
                 </button>
 
                 {isFilterOpen && (
-                  <input
-                    type="text"
-                    placeholder="Search transactions..."
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      placeholder="Search transactions..."
+                      value={searchValue}
+                      onChange={handleSearchChange}
+                      className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    {user?.type === "admin" && (
+                      <select
+                        value={selectedCreator}
+                        onChange={(e) => setSelectedCreator(e.target.value)}
+                        className="p-3 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 font-medium focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">All Users (Admin View)</option>
+                        {operatorsList.map((op, idx) => (
+                          <option key={idx} value={op}>
+                            User: {op}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 )}
               </div>
 

@@ -1,6 +1,6 @@
 import connection from "@/lib/mongodb";
 import UserModal from "@/models/userModal";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
@@ -14,29 +14,48 @@ export async function POST(request) {
       active,
       current_balance,
       group,
-    } = await request.json(); // Ensure username is uppercase for validation
+    } = await request.json();
+
     const uppercaseUsername = username ? username.toUpperCase() : username;
+    const uppercaseCreatedBy = created_by ? created_by.toUpperCase() : created_by;
+
+    if (!group) {
+      return NextResponse.json(
+        { Message: "Group is required" },
+        { status: 400 }
+      );
+    }
+    if (!uppercaseCreatedBy) {
+      return NextResponse.json(
+        { Message: "Created by user is required" },
+        { status: 400 }
+      );
+    }
+
     const existingUser = await UserModal.findOne({
       username: uppercaseUsername,
+      created_by: uppercaseCreatedBy,
+      group,
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { Message: "User with this username already exists" },
+        { Message: "User with this username already exists for this creator" },
         { status: 400 }
       );
     }
-    const newWebsite = new UserModal({
+
+    const newUser = new UserModal({
       username: uppercaseUsername,
       website_name: website_name ? website_name.toUpperCase() : website_name,
       email,
       current_balance,
-      created_by: created_by ? created_by.toUpperCase() : created_by,
+      created_by: uppercaseCreatedBy,
       active,
       group,
     });
 
-    await newWebsite.save();
+    await newUser.save();
 
     return NextResponse.json({
       Message: "User created successfully",
@@ -55,24 +74,35 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || 1);
     const onlyNames = searchParams.get("onlyNames");
     const group = searchParams.get("group");
+    const userType = searchParams.get("userType") || "user";
+    const createdBy = searchParams.get("createdBy") || searchParams.get("created_by") || "";
 
     await connection();
 
+    const baseFilter = { group };
+    if (userType === "user" && createdBy) {
+      baseFilter.created_by = createdBy.toUpperCase();
+    } else if (userType === "admin" && createdBy) {
+      baseFilter.created_by = createdBy.toUpperCase();
+    }
+
     if (onlyNames === "true") {
-      const userNames = await UserModal.find(
-        { group },
-        { _id: 0, username: 1, website_name: 1 }
-      ).then((users) =>
-        users.reduce((acc, cur) => {
-          acc[cur.username] = cur.website_name;
-          return acc;
-        }, {})
-      );
-      return NextResponse.json({ data: userNames });
+      const users = await UserModal.find(baseFilter, {
+        _id: 0,
+        username: 1,
+        website_name: 1,
+      });
+
+      const userMap = users.reduce((acc, cur) => {
+        acc[cur.username] = cur.website_name;
+        return acc;
+      }, {});
+
+      return NextResponse.json({ data: userMap });
     }
 
     const query = {
-      group,
+      ...baseFilter,
       $or: [
         { username: { $regex: search, $options: "i" } },
         { website_name: { $regex: search, $options: "i" } },
@@ -80,16 +110,14 @@ export async function GET(request) {
       ],
     };
 
-    // Get the total count of documents matching the query
     const totalData = await UserModal.countDocuments(query);
 
-    // Get paginated bank data
-    const banks = await UserModal.find(query, { __v: 0, _id: 0 })
+    const users = await UserModal.find(query, { __v: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
 
-    return NextResponse.json({ data: banks, totalData });
+    return NextResponse.json({ data: users, totalData });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });

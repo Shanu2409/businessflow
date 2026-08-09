@@ -12,6 +12,7 @@ import {
   FiGlobe,
   FiDatabase,
   FiPieChart,
+  FiUser,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 
@@ -20,7 +21,6 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
-  // Menu items with icons
   const menuItems = [
     { title: "HOME", link: "/", icon: <FiHome className="mr-2" /> },
     { title: "BKS", link: "/bank", icon: <FiDatabase className="mr-2" /> },
@@ -37,6 +37,14 @@ const Navbar = () => {
       icon: <FiPieChart className="mr-2" />,
     },
   ];
+
+  if (user?.type === "admin") {
+    menuItems.push({
+      title: "AC",
+      link: "/account",
+      icon: <FiUser className="mr-2" />,
+    });
+  }
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {

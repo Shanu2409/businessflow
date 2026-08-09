@@ -62,17 +62,16 @@ const AddTransactionForm = ({
 
     const user = JSON.parse(userRaw);
 
-    // Admin: fetch all banks
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true&group=${user.group}`
+        `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
       const bankData = responseData?.data || [];
 
       sessionStorage.setItem("banks", JSON.stringify(bankData));
       setBankList(bankData);
     } catch (error) {
-      console.error("Error fetching bank list for admin:", error);
+      console.error("Error fetching bank list:", error);
     }
   };
 
@@ -86,11 +85,11 @@ const AddTransactionForm = ({
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
-        setWebsites(responseData?.data || {});
+        setWebsites(responseData?.data || []);
       }
     } catch (error) {
       console.error("Error fetching website data:", error);
@@ -107,7 +106,7 @@ const AddTransactionForm = ({
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));
