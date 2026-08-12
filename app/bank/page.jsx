@@ -237,7 +237,18 @@ const PageContent = () => {
                               {index + 1 + (page - 1) * itemsPerPage}
                             </td>
                             <td className="px-4 py-2 border border-gray-600">
-                              {row.bank_name}
+                              <button
+                                onClick={() =>
+                                  router.push(
+                                    `/transaction?search=${encodeURIComponent(
+                                      row.bank_name
+                                    )}`
+                                  )
+                                }
+                                className="text-blue-600 hover:underline"
+                              >
+                                {row.bank_name}
+                              </button>
                             </td>
                             <td className="px-4 py-2 border border-gray-600">
                               {row.ifsc_code}
