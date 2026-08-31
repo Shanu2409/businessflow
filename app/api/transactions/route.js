@@ -193,7 +193,72 @@ export async function GET(request) {
       .limit(limit)
       .skip((page - 1) * limit);
 
-    return NextResponse.json({ data: transactions, totalData });
+    // Compute running balances in chronological order and map them back
+    try {
+      // Create chronological copy (oldest first)
+      const chronological = [...transactions].sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+
+      const balanceMap = new Map();
+
+      for (let i = 0; i < chronological.length; i++) {
+        const tx = chronological[i];
+        const amount = Number(tx.amount) || 0;
+        const type = tx.transaction_type || "Deposit";
+
+        let current = null;
+
+        if (i === 0) {
+          if (typeof tx.old_bank_balance === "number") {
+            current = Number(tx.old_bank_balance);
+          } else if (typeof tx.effective_balance === "number") {
+            // derive opening balance from stored effective_balance when possible
+            current =
+              type === "Deposit"
+                ? Number(tx.effective_balance) - amount
+                : Number(tx.effective_balance) + amount;
+          } else {
+            current = 0;
+          }
+        } else {
+          // opening balance is previous tx's effective balance
+          current = Number(chronological[i - 1].effective_balance_computed || chronological[i - 1].effective_balance || 0);
+        }
+
+        const effective = type === "Deposit" ? current + amount : current - amount;
+
+        // store computed values on the chronological object for next iterations
+        chronological[i].effective_balance_computed = effective;
+
+        // map by id for re-mapping to original order
+        balanceMap.set(String(tx._id), {
+          current: current,
+          effective: effective,
+        });
+      }
+
+      // Attach computed balances back to the original transactions array
+      const transactionsWithRunning = transactions.map((tx) => {
+        const key = String(tx._id);
+        if (balanceMap.has(key)) {
+          const { current, effective } = balanceMap.get(key);
+          // overwrite old_bank_balance and effective_balance with computed running values
+          return {
+            ...tx.toObject(),
+            old_bank_balance: current,
+            effective_balance: effective,
+          };
+        }
+        return tx;
+      });
+
+      return NextResponse.json({ data: transactionsWithRunning, totalData });
+    } catch (err) {
+      // In case of any error during running-balance computation, return raw data
+      console.error("Running balance compute error:", err);
+      return NextResponse.json({ data: transactions, totalData });
+    }
   } catch (error) {
     console.log(error);
     return NextResponse.json({ Message: error.message }, { status: 500 });
