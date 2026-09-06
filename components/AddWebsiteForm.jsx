@@ -28,24 +28,23 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       );
       toast.success(response?.data?.Message || "Website updated successfully");
       setShowAddWebsiteForm(false);
-      fetchData();
-      fetchWebsiteList();
+      if (fetchData) await fetchData();
+      await fetchWebsiteList();
     } catch (error) {
       console.error("Error editing website:", error);
       if (error.response && error.response.status === 400) {
         toast.error(
-          error.response.data.Message || "Website with this name already exists"
+          error.response.data?.Message || "Website with this name already exists"
         );
       } else {
         toast.error("Error updating website");
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const fetchWebsiteList = async () => {
-    setLoading(true);
     try {
       let user = {};
       if (typeof window !== "undefined") {
@@ -60,8 +59,6 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -74,15 +71,12 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
         current_balance: currentBalance,
         type: transactionType === "Deposit" ? true : false,
       });
-      setShowAddWebsiteForm(false);
-      fetchData();
-      fetchWebsiteList();
       return;
     }
 
     let user = {};
     if (typeof window !== "undefined") {
-      user = JSON.parse(sessionStorage.getItem("user"));
+      user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
 
     if (!websiteName || !url || !currentBalance) {
@@ -92,41 +86,33 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
 
     setLoading(true);
     try {
-      try {
-        const response = await axios.post("/api/websites", {
-          website_name: websiteName,
-          url: url,
-          current_balance: currentBalance,
-          created_by: user?.parent_user || user?.username,
-          group: user?.group,
-        });
+      const response = await axios.post("/api/websites", {
+        website_name: websiteName,
+        url: url,
+        current_balance: currentBalance,
+        created_by: user?.parent_user || user?.username,
+        group: user?.group,
+      });
 
-        toast.success(response.data.Message || "Website added successfully");
-        fetchData();
-        fetchWebsiteList();
-
-        setWebsiteName("");
-        setUrl("");
-        setCurrentBalance("");
-        setShowAddWebsiteForm(false);
-      } catch (err) {
-        // Check for specific error responses
-        if (err.response && err.response.status === 400) {
-          toast.error(
-            err.response.data.Message || "Website with this name already exists"
-          );
-          // Keep form open to allow user to modify the name
-          return;
-        } else {
-          throw err; // rethrow if it's not the specific error we're handling
-        }
+      toast.success(response.data?.Message || "Website added successfully");
+      setWebsiteName("");
+      setUrl("");
+      setCurrentBalance("");
+      setShowAddWebsiteForm(false);
+      if (fetchData) await fetchData();
+      await fetchWebsiteList();
+    } catch (err) {
+      console.error("Error adding website:", err);
+      if (err.response && err.response.status === 400) {
+        toast.error(
+          err.response.data?.Message || "Website with this name already exists"
+        );
+      } else {
+        toast.error(err.response?.data?.Message || "Error adding website");
       }
-    } catch (error) {
-      console.error("Error adding website:", error);
-      toast.error(error.response?.data?.Message || "Error adding website");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -205,16 +191,19 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
 
           <div className="flex items-center justify-center">
             <button
-              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              disabled={loading}
+              className={`bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               type="submit"
             >
-              {editData ? "Update" : "Add"}
+              {loading ? "Processing..." : editData ? "Update" : "Add"}
             </button>
           </div>
         </form>
       </div>
 
-      <FullScreenLoader loading={loading} />
+      <FullScreenLoader isLoading={loading} />
     </>
   );
 };

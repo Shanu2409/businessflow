@@ -91,58 +91,37 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         } else {
           updateData.bank_name = initialBankName;
         }
-        try {
-          const response = await axios.put(apiUrl, updateData);
-          toast.success(
-            response?.data?.Message || "Bank details updated successfully"
-          );
-          fetchData();
-          resetForm();
-        } catch (err) {
-          if (err.response && err.response.status === 400) {
-            toast.error(
-              err.response.data.Message || "Bank with this name already exists"
-            );
-            setLoading(false);
-            return;
-          } else {
-            throw err;
-          }
-        }
-      } else {
-        try {
-          const dataOwner = user.parent_user || user.username;
-          const response = await axios.post("/api/banks", {
-            ...formData,
-            created_by: dataOwner,
-            group: user.group,
-          });
 
-          toast.success(response.data.Message || "Bank added successfully");
-          fetchData();
-          resetForm();
-        } catch (err) {
-          // Check for specific error responses
-          if (err.response && err.response.status === 400) {
-            toast.error(
-              err.response.data.Message || "Bank with this name already exists"
-            );
-            // Keep the form open but clear loading state
-            setLoading(false);
-            return;
-          } else {
-            throw err; // rethrow if it's not the specific error we're handling
-          }
-        }
+        const response = await axios.put(apiUrl, updateData);
+        toast.success(
+          response?.data?.Message || "Bank details updated successfully"
+        );
+      } else {
+        const dataOwner = user.parent_user || user.username;
+        const response = await axios.post("/api/banks", {
+          ...formData,
+          created_by: dataOwner,
+          group: user.group,
+        });
+
+        toast.success(response.data?.Message || "Bank added successfully");
       }
 
-      fetchData();
       resetForm();
-    } catch (error) {
-      console.error("Error processing bank:", error);
-      toast.error(
-        error.response?.data?.Message || "Failed to process bank details"
-      );
+      if (fetchData) {
+        await fetchData();
+      }
+    } catch (err) {
+      console.error("Error processing bank:", err);
+      if (err.response && err.response.status === 400) {
+        toast.error(
+          err.response.data?.Message || "Bank with this name already exists"
+        );
+      } else {
+        toast.error(
+          err.response?.data?.Message || "Failed to process bank details"
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -158,40 +137,44 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
           onSubmit={handleSubmit}
           className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
         >
-          {/* Input Fields (Dynamic Rendering for Reusability) */}
           {[
             {
-              icon: <FaUniversity />,
+              icon: <FaUniversity className="text-gray-600 mr-3" />,
               name: "bank_name",
               placeholder: "Bank Name",
+              type: "text",
+              disabled: !!editData,
             },
             {
-              icon: <FaRegCreditCard />,
+              icon: <FaRegCreditCard className="text-gray-600 mr-3" />,
               name: "account_number",
               placeholder: "ac Number",
+              type: "text",
             },
-            { icon: <FaCode />, name: "ifsc_code", placeholder: "IFSC Code" },
             {
-              icon: <FaMoneyBillWave />,
+              icon: <FaCode className="text-gray-600 mr-3" />,
+              name: "ifsc_code",
+              placeholder: "IFSC Code",
+              type: "text",
+            },
+            {
+              icon: <FaMoneyBillWave className="text-gray-600 mr-3" />,
               name: "current_balance",
               placeholder: "Current Balance",
               type: "number",
               step: "0.01",
             },
           ].map(
-            (
-              { icon, name, placeholder, type = "text", step, disabled },
-              index
-            ) => (
+            ({ icon, name, placeholder, type = "text", step, disabled }) => (
               <div
-                key={index}
+                key={name}
                 className="mb-4 flex items-center border-b border-gray-300 py-2"
               >
                 {icon}
                 <input
                   className={`appearance-none bg-transparent border-none w-full text-gray-700 py-1 px-2 leading-tight focus:outline-none ${
                     disabled
-                      ? "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                      ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
                       : ""
                   }`}
                   type={type}
@@ -209,10 +192,13 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
           {/* Submit Button */}
           <div className="flex items-center justify-center">
             <button
-              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              disabled={loading}
+              className={`bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               type="submit"
             >
-              {editData ? "Update" : "Add"}
+              {loading ? "Processing..." : editData ? "Update" : "Add"}
             </button>
           </div>
         </form>

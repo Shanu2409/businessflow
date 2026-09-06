@@ -226,7 +226,10 @@ const ReportsPage = () => {
 
   // Fetch report data based on selected type and filters
   const fetchReportData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const creatorParam =
@@ -2219,7 +2222,7 @@ const ReportsPage = () => {
         {/* Report Content */}
         {loading ? (
           <div className="flex justify-center p-12">
-            <FullScreenLoader />
+            <FullScreenLoader isLoading={loading} />
           </div>
         ) : (
           renderReportContent()

@@ -64,9 +64,12 @@ const PageContent = () => {
   };
 
   const fetchWebsiteData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const searchQuery = searchParams.get("search") || "";
-
+    setLoading(true);
     try {
       const creatorParam =
         user.type === "admin" ? "" : (user.parent_user || user.username);
@@ -78,6 +81,9 @@ const PageContent = () => {
       setTotalData(responseData?.totalData || 0);
     } catch (error) {
       console.error("Error fetching website data:", error);
+      toast.error("Failed to load websites.");
+    } finally {
+      setLoading(false);
     }
   }, [user, search, page, searchParams]);
 
@@ -89,11 +95,13 @@ const PageContent = () => {
           `/api/websites/${id}?group=${user.group}`
         );
         toast.success(response?.data?.message);
-        fetchWebsiteData();
+        await fetchWebsiteData();
       } catch (error) {
         console.error("Error deleting website:", error);
+        toast.error("Failed to delete website.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
   };
 

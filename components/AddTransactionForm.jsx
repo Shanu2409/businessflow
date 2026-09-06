@@ -124,13 +124,24 @@ const AddTransactionForm = ({
   };
 
   useEffect(() => {
-    setLoading(true);
-
-    fetchBankList();
-    fetchWebsiteList();
-    fetchUserList();
-
-    setLoading(false);
+    let isMounted = true;
+    const initData = async () => {
+      try {
+        await Promise.all([
+          fetchBankList(),
+          fetchWebsiteList(),
+          fetchUserList(),
+        ]);
+      } catch (err) {
+        console.error("Error loading dropdown data:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -150,6 +161,7 @@ const AddTransactionForm = ({
     let user = JSON.parse(sessionStorage.getItem("user") || "{}");
     const dataOwner = user.parent_user || user.username;
 
+    setLoading(true);
     try {
       const response = await axios.post("/api/transactions", {
         username: selectedUser,
@@ -161,12 +173,19 @@ const AddTransactionForm = ({
         group: user.group,
       });
 
-      toast.success(response.data.message);
-      fetchData();
+      toast.success(response.data?.message || "Transaction created successfully");
       resetForm();
+      if (setShowTransactionForm) {
+        setShowTransactionForm(false);
+      }
+      if (fetchData) {
+        await fetchData();
+      }
     } catch (error) {
       console.error("Error processing transaction:", error);
       toast.error(error.response?.data?.message || "Transaction failed.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -176,7 +195,6 @@ const AddTransactionForm = ({
     setSelectedBank("");
     setTransactionType("Deposit");
     setAmount("");
-    // setShowTransactionForm(false);
   };
 
   return (
@@ -244,10 +262,13 @@ const AddTransactionForm = ({
               {/* Submit Button */}
               <div className="flex items-center justify-center mt-2">
                 <button
-                  className="bg-secondary hover:bg-primary text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm"
+                  disabled={loading}
+                  className={`bg-secondary hover:bg-primary text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   type="submit"
                 >
-                  {editData ? "Update" : "Add"}
+                  {loading ? "Processing..." : editData ? "Update" : "Add"}
                 </button>
               </div>
             </form>

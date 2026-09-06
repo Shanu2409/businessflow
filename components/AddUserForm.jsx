@@ -171,7 +171,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
   }
 
   const fetchWebsiteList = async () => {
-    setLoading(true);
     let user = {};
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -187,12 +186,9 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching website data:", error);
     }
-
-    setLoading(false);
   };
 
   const fetchUserList = async () => {
-    setLoading(true);
     let user = {};
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -208,9 +204,8 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
-
-    setLoading(false);
   };
+
   const handleEdit = async (data) => {
     setLoading(true);
     let user = {};
@@ -223,81 +218,72 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
         data
       );
       toast.success(response?.data?.Message || "User updated successfully");
-      fetchUserList();
       setShowAddUserForm(false);
-      fetchData();
+      if (fetchData) await fetchData();
+      await fetchUserList();
     } catch (error) {
       console.error("Error editing user:", error);
       if (error.response && error.response.status === 400) {
         toast.error(
-          error.response.data.Message ||
+          error.response.data?.Message ||
           "User with this username already exists"
         );
       } else {
         toast.error("Failed to update user. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (editData) {
-      handleEdit({
+      await handleEdit({
         username: username,
         email: email,
         website_name: selectedWebsite,
         active: isActive,
       });
-      setShowAddUserForm(false);
-      fetchData();
       return;
     }
+
     let user = {};
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
     const dataOwner = user.parent_user || user.username;
+
+    setLoading(true);
     try {
-      setLoading(true);
-      try {
-        const response = await axios.post("/api/users", {
-          username: username,
-          email: email,
-          website_name: selectedWebsite,
-          active: isActive,
-          created_by: dataOwner,
-          group: user.group,
-        });
+      const response = await axios.post("/api/users", {
+        username: username,
+        email: email,
+        website_name: selectedWebsite,
+        active: isActive,
+        created_by: dataOwner,
+        group: user.group,
+      });
 
-        toast.success(response.data.Message || "User created successfully");
-
-        fetchData();
-        fetchUserList();
-
-        setUsername("");
-        setEmail("");
-        setSelectedWebsite("");
-        setIsActive(true);
-        setShowAddUserForm(false);
-      } catch (err) {
-        // Check for specific error responses
-        if (err.response && err.response.status === 400) {
-          toast.error(
-            err.response.data.Message ||
-            "User with this username already exists"
-          );
-          // Keep form open to allow user to modify the name
-          return;
-        } else {
-          throw err; // rethrow if it's not the specific error we're handling
-        }
+      toast.success(response.data?.Message || "User created successfully");
+      setUsername("");
+      setEmail("");
+      setSelectedWebsite("");
+      setIsActive(true);
+      setShowAddUserForm(false);
+      if (fetchData) await fetchData();
+      await fetchUserList();
+    } catch (err) {
+      console.error("Error creating user:", err);
+      if (err.response && err.response.status === 400) {
+        toast.error(
+          err.response.data?.Message ||
+          "User with this username already exists"
+        );
+      } else {
+        toast.error("Failed to create user. Please try again.");
       }
-    } catch (error) {
-      console.error("Error creating user:", error);
-      toast.error("Failed to create user. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -397,10 +383,13 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
 
           <div className="flex items-center justify-center">
             <button
-              className="bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              disabled={loading}
+              className={`bg-secondary hover:bg-primary text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               type="submit"
             >
-              {editData ? "Update" : "Add"}
+              {loading ? "Processing..." : editData ? "Update" : "Add"}
             </button>
           </div>
         </form>

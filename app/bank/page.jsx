@@ -57,7 +57,10 @@ const PageContent = () => {
   }, [debouncedSearch]);
 
   const fetchBankData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const creatorParam =
@@ -70,8 +73,9 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching bank data:", error);
       toast.error("Failed to fetch bank data.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [search, page, sortLabel, user, itemsPerPage]);
 
   useEffect(() => {

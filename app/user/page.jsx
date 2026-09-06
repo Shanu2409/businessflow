@@ -62,7 +62,10 @@ const PageContent = () => {
 
   // Fetch users (Pagination fixed)
   const fetchUserData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const creatorParam =
@@ -75,8 +78,9 @@ const PageContent = () => {
     } catch (error) {
       console.error("Error fetching user data:", error);
       toast.error("Failed to fetch user data.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [search, page, user, itemsPerPage]);
 
   useEffect(() => {
@@ -90,14 +94,18 @@ const PageContent = () => {
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this user ac?")) {
+      setLoading(true);
       try {
         const response = await axios.delete(
           `/api/users/${id}?group=${user.group}`
         );
         toast.success(response?.data?.message);
-        fetchUserData();
+        await fetchUserData();
       } catch (error) {
         console.error("Error deleting user:", error);
+        toast.error("Failed to delete user.");
+      } finally {
+        setLoading(false);
       }
     }
   };

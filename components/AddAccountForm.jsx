@@ -23,7 +23,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     setLoading(true);
     let user = {};
     if (typeof window !== "undefined") {
-      user = JSON.parse(sessionStorage.getItem("user"));
+      user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
     const dataOwner = user.parent_user || user.username;
     try {
@@ -34,12 +34,13 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
         }
       );
       toast.success(response?.data?.Message || response?.data?.message || "User updated successfully");
-      fetchData();
+      if (fetchData) await fetchData();
     } catch (error) {
       console.error("Error editing user:", error);
       toast.error(error.response?.data?.Message || "Failed to update user.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -51,9 +52,9 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     }
 
     if (editData) {
-      handleEdit({ username, password });
+      await handleEdit({ username, password });
       setShowAddAccountForm(false);
-      fetchData();
+      if (fetchData) await fetchData();
       return;
     }
 
@@ -63,38 +64,31 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
     try {
-      try {
-        const response = await axios.post("/api/accounts", {
-          username,
-          password,
-          group: user.group,
-          created_by: user.username,
-          parent_user: user.parent_user || user.username,
-        });
+      const response = await axios.post("/api/accounts", {
+        username,
+        password,
+        group: user.group,
+        created_by: user.username,
+        parent_user: user.parent_user || user.username,
+      });
 
-        toast.success(response.data.Message || "User added successfully");
-        fetchData();
-        setUsername("");
-        setPassword("");
-        setShowAddAccountForm(false);
-      } catch (err) {
-        // Check for specific error responses
-        if (err.response && err.response.status === 400) {
-          toast.error(
-            err.response.data.Message || "ac with this username already exists"
-          );
-          // Keep the form open to allow the user to modify the username
-          return;
-        } else {
-          throw err; // rethrow if it's not the specific error we're handling
-        }
+      toast.success(response.data?.Message || "User added successfully");
+      setUsername("");
+      setPassword("");
+      setShowAddAccountForm(false);
+      if (fetchData) await fetchData();
+    } catch (err) {
+      console.error("Error adding user:", err);
+      if (err.response && err.response.status === 400) {
+        toast.error(
+          err.response.data?.Message || "Account with this username already exists"
+        );
+      } else {
+        toast.error(err.response?.data?.Message || "Failed to add user");
       }
-    } catch (error) {
-      console.error("Error adding user:", error);
-      toast.error(error.response?.data?.Message || "Failed to add user");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -144,11 +138,13 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
 
           <div className="flex items-center justify-center">
             <button
-              disabled={!username || !password}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              disabled={!username || !password || loading}
+              className={`bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               type="submit"
             >
-              {editData ? "Update" : "Add"}
+              {loading ? "Processing..." : editData ? "Update" : "Add"}
             </button>
           </div>
         </form>

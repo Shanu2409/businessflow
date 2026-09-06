@@ -83,7 +83,10 @@ const PageContent = () => {
   const itemsPerPage = 20;
 
   const fetchBankData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const creatorParam =
       user.type === "admin"
@@ -97,8 +100,10 @@ const PageContent = () => {
       setTotalData(responseData?.totalData || 0);
     } catch (error) {
       console.error("Error fetching account data:", error);
+      toast.error("Failed to load accounts.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [search, page, user, itemsPerPage]);
 
   useEffect(() => {
@@ -107,6 +112,7 @@ const PageContent = () => {
 
   const handleDelete = async (id) => {
     if (confirm(`Are you sure you want to delete account ${id}?`)) {
+      setLoading(true);
       try {
         const creatorParam =
           user.type === "admin"
@@ -116,10 +122,12 @@ const PageContent = () => {
           `/api/accounts/${id}?group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
         );
         toast.success("Account deleted successfully.");
-        fetchBankData();
+        await fetchBankData();
       } catch (error) {
         console.error("Error deleting account:", error);
         toast.error(error.response?.data?.Message || "Failed to delete account.");
+      } finally {
+        setLoading(false);
       }
     }
   };

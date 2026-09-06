@@ -52,7 +52,10 @@ const PageContent = () => {
 
   // Fetch Transactions (Optimized with useCallback)
   const fetchTransactions = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const creatorParam =
@@ -65,9 +68,11 @@ const PageContent = () => {
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
     } catch (error) {
+      console.error("Failed to load transactions:", error);
       toast.error("Failed to load transactions.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [search, page, sortLabel, user, selectedCreator]);
 
   // Update useEffect to listen for debounced search changes
@@ -122,12 +127,16 @@ const PageContent = () => {
   // Delete Transaction
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this flow?")) {
+      setLoading(true);
       try {
         await axios.delete(`/api/transactions/${id}?group=${user.group}`);
         toast.success("Flow deleted.");
-        fetchTransactions();
+        await fetchTransactions();
       } catch (error) {
+        console.error("Failed to delete flow:", error);
         toast.error("Failed to delete flow.");
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -164,11 +173,12 @@ const PageContent = () => {
 
       if (response.status === 200) {
         toast.success("Status updated successfully");
-        fetchTransactions(); // Refresh data after update
+        await fetchTransactions(); // Refresh data after update
       } else {
         toast.error("Failed to update status.");
       }
     } catch (error) {
+      console.error("Error updating status:", error);
       toast.error("Error updating status.");
     }
   };
@@ -190,7 +200,7 @@ const PageContent = () => {
       });
 
       toast.success(checked ? "All items checked" : "All items unchecked");
-      fetchTransactions();
+      await fetchTransactions();
     } catch (error) {
       toast.error("Failed to update check status for all items");
       console.error("Error updating check status:", error);
@@ -224,7 +234,7 @@ const PageContent = () => {
         toast.info("No eligible items to update");
       }
 
-      fetchTransactions();
+      await fetchTransactions();
     } catch (error) {
       toast.error("Failed to update re-check status");
       console.error("Error updating re-check status:", error);
@@ -595,37 +605,39 @@ const PageContent = () => {
                           </td>
                           {isBankEnabled ? (
                             <td className="px-4 py-2 border border-gray-600">
-                              {Number(row.old_bank_balance).toLocaleString("en-IN")}
+                              {Number(row.old_bank_balance || 0).toLocaleString("en-IN")}
                             </td>
                           ) : (
                             <td className="px-4 py-2 border border-gray-600">
-                              {Number(row.old_website_balance).toLocaleString(
+                              {Number(row.old_website_balance || 0).toLocaleString(
                                 "en-IN"
                               )}
                             </td>
                           )}
                           <td className="px-4 py-2 border border-gray-600">
-                            {Number(row.amount).toLocaleString("en-IN")}
+                            {Number(row.amount || 0).toLocaleString("en-IN")}
                           </td>
                           {
                             <td className="px-4 py-2 border border-gray-600">
                               {isBankEnabled
-                                ? Number(row.effective_balance).toLocaleString(
+                                ? Number(row.effective_balance || 0).toLocaleString(
                                   "en-IN"
                                 )
-                                : Number(row.new_website_balance).toLocaleString(
+                                : Number(row.new_website_balance || 0).toLocaleString(
                                   "en-IN"
                                 )}
                             </td>
                           }
                           <td className="px-4 py-2 border border-gray-600">
-                            {new Intl.DateTimeFormat("en-IN", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }).format(new Date(row.createdAt))}
+                            {row.createdAt && !isNaN(new Date(row.createdAt).getTime())
+                              ? new Intl.DateTimeFormat("en-IN", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }).format(new Date(row.createdAt))
+                              : "-"}
                           </td>
                           {/* <td className="px-4 py-2 border border-gray-600 text-center">
                             <button
