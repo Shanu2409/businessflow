@@ -69,7 +69,11 @@ const PageContent = () => {
       setTotalData(responseData?.totalData || 0);
     } catch (error) {
       console.error("Failed to load transactions:", error);
-      toast.error("Failed to load transactions.");
+      const errMsg =
+        error.response?.data?.Message ||
+        error.response?.data?.message ||
+        "Failed to load transactions.";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
