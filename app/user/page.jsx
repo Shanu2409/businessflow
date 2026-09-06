@@ -53,8 +53,9 @@ const PageContent = () => {
     if (!user) return;
     setLoading(true);
     try {
+      const dataOwner = user.parent_user || user.username;
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -119,11 +120,10 @@ const PageContent = () => {
 
           {/* Add User Form */}
           <div
-            className={`grid w-full min-w-0 gap-6 ${
-              showAddUserForm
-                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
-                : "grid-cols-1"
-            }`}
+            className={`grid w-full min-w-0 gap-6 ${showAddUserForm
+              ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+              : "grid-cols-1"
+              }`}
           >
             {showAddUserForm && (
               <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">

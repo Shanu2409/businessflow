@@ -111,9 +111,10 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
         }
       } else {
         try {
+          const dataOwner = user.parent_user || user.username;
           const response = await axios.post("/api/banks", {
             ...formData,
-            created_by: user.username,
+            created_by: dataOwner,
             group: user.group,
           });
 

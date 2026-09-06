@@ -101,9 +101,8 @@ const DropdownMenu = ({
       <label className="block text-gray-700 font-bold mb-1">{label}</label>
       <div className="flex items-center">
         <div
-          className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white flex-grow ${
-            isDisabled ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`border border-gray-300 rounded-md p-2 flex items-center justify-between cursor-pointer bg-white flex-grow ${isDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           onClick={() => {
             if (!isDisabled) {
               setIsOpen(!isOpen);
@@ -140,9 +139,8 @@ const DropdownMenu = ({
               filteredOptions.map((option, index) => (
                 <div
                   key={option}
-                  className={`p-2 cursor-pointer ${
-                    index === highlightedIndex ? "bg-gray-200" : ""
-                  }`}
+                  className={`p-2 cursor-pointer ${index === highlightedIndex ? "bg-gray-200" : ""
+                    }`}
                   onClick={() => selectOption(option)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
@@ -178,9 +176,10 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
+    const dataOwner = user.parent_user || user.username;
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -198,9 +197,10 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
+    const dataOwner = user.parent_user || user.username;
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));
@@ -215,7 +215,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     setLoading(true);
     let user = {};
     if (typeof window !== "undefined") {
-      user = JSON.parse(sessionStorage.getItem("user"));
+      user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
     try {
       const response = await axios.put(
@@ -231,7 +231,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       if (error.response && error.response.status === 400) {
         toast.error(
           error.response.data.Message ||
-            "User with this username already exists"
+          "User with this username already exists"
         );
       } else {
         toast.error("Failed to update user. Please try again.");
@@ -257,8 +257,9 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
     }
     let user = {};
     if (typeof window !== "undefined") {
-      user = JSON.parse(sessionStorage.getItem("user"));
+      user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
+    const dataOwner = user.parent_user || user.username;
     try {
       setLoading(true);
       try {
@@ -267,7 +268,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
           email: email,
           website_name: selectedWebsite,
           active: isActive,
-          created_by: user.username,
+          created_by: dataOwner,
           group: user.group,
         });
 
@@ -286,7 +287,7 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
         if (err.response && err.response.status === 400) {
           toast.error(
             err.response.data.Message ||
-              "User with this username already exists"
+            "User with this username already exists"
           );
           // Keep form open to allow user to modify the name
           return;

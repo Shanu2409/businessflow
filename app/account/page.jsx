@@ -41,11 +41,11 @@ const PageContent = () => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
-      setUser(userData);
-      if (userData && userData.type !== "admin") {
-        toast.error("Access denied. Admin rights required.");
-        router.push("/");
+      if (!userData || !userData.username) {
+        router.push("/login");
+        return;
       }
+      setUser(userData);
     }
   }, [router]);
 
@@ -64,11 +64,11 @@ const PageContent = () => {
   const fetchBankData = async () => {
     if (!user) return;
     setLoading(true);
+    const dataOwner = user.parent_user || user.username;
     try {
       const { data: responseData } = await axios.get(
-        `/api/accounts?search=${
-          search || searchParams.get("search") || ""
-        }&page=${page}&limit=${itemsPerPage}&group=${user.group}`
+        `/api/accounts?search=${search || searchParams.get("search") || ""
+        }&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -81,12 +81,15 @@ const PageContent = () => {
   const handleDelete = async (id) => {
     if (confirm(`Are you sure you want to delete account ${id}?`)) {
       try {
-        await axios.delete(`/api/accounts/${id}?group=${user.group}`);
+        const dataOwner = user.parent_user || user.username;
+        await axios.delete(
+          `/api/accounts/${id}?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        );
         toast.success("Account deleted successfully.");
         fetchBankData();
       } catch (error) {
         console.error("Error deleting account:", error);
-        toast.error("Failed to delete account.");
+        toast.error(error.response?.data?.Message || "Failed to delete account.");
       }
     }
   };
@@ -103,15 +106,15 @@ const PageContent = () => {
     }));
   };
 
+  // Trigger fetch when user is loaded, or when search / page changes
   useEffect(() => {
-    fetchBankData();
-  }, [search, page]);
+    if (user) {
+      fetchBankData();
+    }
+  }, [user, search, page]);
 
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
-  const currentRows = data.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  const currentRows = data; // Since API already returns paginated data
 
   return (
     <>
@@ -121,7 +124,7 @@ const PageContent = () => {
           {/* Header & Toggle Form Button */}
           <div className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-4 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-              ac Details
+              Account Administration
             </h1>
             <button
               className="bg-blue-600 text-white font-semibold px-6 py-2 rounded transition duration-300 hover:bg-blue-700 shadow"
@@ -136,11 +139,10 @@ const PageContent = () => {
 
           {/* Add Bank Form */}
           <div
-            className={`grid w-full min-w-0 gap-6 ${
-              showAddAccountForm
-                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
-                : "grid-cols-1"
-            }`}
+            className={`grid w-full min-w-0 gap-6 ${showAddAccountForm
+              ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+              : "grid-cols-1"
+              }`}
           >
             {showAddAccountForm && (
               <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">

@@ -189,15 +189,16 @@ const ReportsPage = () => {
   const fetchReferenceData = useCallback(async () => {
     if (!user) return;
     try {
+      const dataOwner = user.parent_user || user.username;
       const [banksRes, websitesRes, usersRes] = await Promise.all([
         axios.get(
-          `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+          `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
         ),
         axios.get(
-          `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+          `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
         ),
         axios.get(
-          `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+          `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
         ),
       ]);
 
@@ -227,11 +228,12 @@ const ReportsPage = () => {
     if (!user) return;
     setLoading(true);
     try {
+      const dataOwner = user.parent_user || user.username;
       const response = await axios.post("/api/reports", {
         reportType,
         group: user.group,
         userType: user.type,
-        createdBy: user.username,
+        createdBy: dataOwner,
         ...filters,
       });
 
@@ -613,7 +615,7 @@ const ReportsPage = () => {
               <p className="text-xl font-bold">
                 {new Intl.NumberFormat("en-IN").format(
                   (data.transactions?.totalDeposits || 0) -
-                    (data.transactions?.totalWithdrawals || 0)
+                  (data.transactions?.totalWithdrawals || 0)
                 )}
               </p>
             </div>
@@ -640,8 +642,8 @@ const ReportsPage = () => {
       const transactionData = Array.isArray(rawData)
         ? rawData
         : rawData.transactions
-        ? [rawData.transactions]
-        : [];
+          ? [rawData.transactions]
+          : [];
 
       if (!transactionData || transactionData.length === 0) {
         return (
@@ -816,7 +818,7 @@ const ReportsPage = () => {
                       >
                         {new Intl.NumberFormat("en-IN").format(
                           (summary.totalDeposits || 0) -
-                            (summary.totalWithdrawals || 0)
+                          (summary.totalWithdrawals || 0)
                         )}
                       </span>
                     </p>
@@ -918,7 +920,7 @@ const ReportsPage = () => {
                     <td className="border border-gray-300 px-4 py-2 text-right font-medium">
                       {new Intl.NumberFormat("en-IN").format(
                         (summary.totalDeposits || 0) -
-                          (summary.totalWithdrawals || 0)
+                        (summary.totalWithdrawals || 0)
                       )}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
@@ -1604,8 +1606,8 @@ const ReportsPage = () => {
               filters.groupBy === "day"
                 ? "Date"
                 : filters.groupBy === "month"
-                ? "Month"
-                : "Year",
+                  ? "Month"
+                  : "Year",
           },
         },
       },
@@ -1846,11 +1848,10 @@ const ReportsPage = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <button
-              className={`p-4 rounded-lg border ${
-                reportType === "systemOverview"
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-gray-50 border-gray-300"
-              } hover:bg-blue-50 transition duration-200`}
+              className={`p-4 rounded-lg border ${reportType === "systemOverview"
+                ? "bg-blue-100 border-blue-500"
+                : "bg-gray-50 border-gray-300"
+                } hover:bg-blue-50 transition duration-200`}
               onClick={() => setReportType("systemOverview")}
             >
               <FaInfoCircle className="mx-auto text-2xl mb-2 text-blue-500" />
@@ -1859,11 +1860,10 @@ const ReportsPage = () => {
               </h3>
             </button>
             <button
-              className={`p-4 rounded-lg border ${
-                reportType === "transactionSummary"
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-gray-50 border-gray-300"
-              } hover:bg-blue-50 transition duration-200`}
+              className={`p-4 rounded-lg border ${reportType === "transactionSummary"
+                ? "bg-blue-100 border-blue-500"
+                : "bg-gray-50 border-gray-300"
+                } hover:bg-blue-50 transition duration-200`}
               onClick={() => setReportType("transactionSummary")}
             >
               <FaChartBar className="mx-auto text-2xl mb-2 text-blue-500" />
@@ -1872,11 +1872,10 @@ const ReportsPage = () => {
               </h3>
             </button>
             <button
-              className={`p-4 rounded-lg border ${
-                reportType === "balanceSummary"
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-gray-50 border-gray-300"
-              } hover:bg-blue-50 transition duration-200`}
+              className={`p-4 rounded-lg border ${reportType === "balanceSummary"
+                ? "bg-blue-100 border-blue-500"
+                : "bg-gray-50 border-gray-300"
+                } hover:bg-blue-50 transition duration-200`}
               onClick={() => setReportType("balanceSummary")}
             >
               <FaChartPie className="mx-auto text-2xl mb-2 text-blue-500" />
@@ -1885,22 +1884,20 @@ const ReportsPage = () => {
               </h3>
             </button>
             <button
-              className={`p-4 rounded-lg border ${
-                reportType === "userActivity"
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-gray-50 border-gray-300"
-              } hover:bg-blue-50 transition duration-200`}
+              className={`p-4 rounded-lg border ${reportType === "userActivity"
+                ? "bg-blue-100 border-blue-500"
+                : "bg-gray-50 border-gray-300"
+                } hover:bg-blue-50 transition duration-200`}
               onClick={() => setReportType("userActivity")}
             >
               <FaChartBar className="mx-auto text-2xl mb-2 text-blue-500" />
               <h3 className="text-sm font-medium text-center">User Activity</h3>
             </button>
             <button
-              className={`p-4 rounded-lg border ${
-                reportType === "trendAnalysis"
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-gray-50 border-gray-300"
-              } hover:bg-blue-50 transition duration-200`}
+              className={`p-4 rounded-lg border ${reportType === "trendAnalysis"
+                ? "bg-blue-100 border-blue-500"
+                : "bg-gray-50 border-gray-300"
+                } hover:bg-blue-50 transition duration-200`}
               onClick={() => setReportType("trendAnalysis")}
             >
               <FaChartLine className="mx-auto text-2xl mb-2 text-blue-500" />
@@ -2075,75 +2072,75 @@ const ReportsPage = () => {
               {/* Bank Filter */}
               {(reportType === "transactionSummary" ||
                 reportType === "trendAnalysis") && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bank
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                    value={filters.bankFilter}
-                    onChange={(e) =>
-                      handleFilterChange("bankFilter", e.target.value)
-                    }
-                  >
-                    <option value="">All Banks</option>
-                    {availableBanks.map((bank, index) => (
-                      <option key={index} value={bank}>
-                        {bank}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bank
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                      value={filters.bankFilter}
+                      onChange={(e) =>
+                        handleFilterChange("bankFilter", e.target.value)
+                      }
+                    >
+                      <option value="">All Banks</option>
+                      {availableBanks.map((bank, index) => (
+                        <option key={index} value={bank}>
+                          {bank}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
               {/* Website Filter */}
               {(reportType === "transactionSummary" ||
                 reportType === "trendAnalysis") && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Website
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                    value={filters.websiteFilter}
-                    onChange={(e) =>
-                      handleFilterChange("websiteFilter", e.target.value)
-                    }
-                  >
-                    <option value="">All Websites</option>
-                    {availableWebsites.map((website, index) => (
-                      <option key={index} value={website}>
-                        {website}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Website
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                      value={filters.websiteFilter}
+                      onChange={(e) =>
+                        handleFilterChange("websiteFilter", e.target.value)
+                      }
+                    >
+                      <option value="">All Websites</option>
+                      {availableWebsites.map((website, index) => (
+                        <option key={index} value={website}>
+                          {website}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
               {/* User Filter */}
               {(reportType === "userActivity" ||
                 reportType === "transactionSummary" ||
                 reportType === "trendAnalysis") && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                    value={filters.userFilter}
-                    onChange={(e) =>
-                      handleFilterChange("userFilter", e.target.value)
-                    }
-                  >
-                    <option value="">All Users</option>
-                    {availableUsers.map((user, index) => (
-                      <option key={index} value={user}>
-                        {user}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      User
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                      value={filters.userFilter}
+                      onChange={(e) =>
+                        handleFilterChange("userFilter", e.target.value)
+                      }
+                    >
+                      <option value="">All Users</option>
+                      {availableUsers.map((user, index) => (
+                        <option key={index} value={user}>
+                          {user}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
             </div>
           </div>
         )}

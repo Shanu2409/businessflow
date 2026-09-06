@@ -77,8 +77,8 @@ const HomeMenu = () => {
     websiteList = JSON.parse(sessionStorage.getItem("websites") || "[]");
   }
 
-  // Show account menu only to admin users
-  if (user?.type === "admin") {
+  // Show account menu to admin and user
+  if (user?.type === "admin" || user?.type === "user") {
     menuItems.push({
       title: "ac",
       link: "/account",
@@ -91,8 +91,9 @@ const HomeMenu = () => {
   const fetchWebsiteList = async () => {
     try {
       const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      const dataOwner = user.parent_user || user.username;
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -105,8 +106,9 @@ const HomeMenu = () => {
   const fetchUserList = async () => {
     try {
       const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      const dataOwner = user.parent_user || user.username;
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));

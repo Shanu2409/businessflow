@@ -48,8 +48,9 @@ const PageContent = () => {
     if (!user) return;
     setLoading(true);
     try {
+      const dataOwner = user.parent_user || user.username;
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -75,8 +76,9 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
+      const dataOwner = user.parent_user || user.username;
       const response = await axios.get(
-        `/api/banks/export?group=${user.group}&userType=${user.type}&createdBy=${user.username}`,
+        `/api/banks/export?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`,
         {
           responseType: "blob",
         }
@@ -127,11 +129,10 @@ const PageContent = () => {
           </div>
 
           <div
-            className={`grid w-full min-w-0 gap-6 ${
-              showAddBankForm
-                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
-                : "grid-cols-1"
-            }`}
+            className={`grid w-full min-w-0 gap-6 ${showAddBankForm
+              ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+              : "grid-cols-1"
+              }`}
           >
             {showAddBankForm && (
               <div className="min-w-0 bg-white p-6 rounded-lg shadow-md">

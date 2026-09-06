@@ -56,10 +56,10 @@ const PageContent = () => {
     const searchQuery = searchParams.get("search") || "";
 
     try {
+      const dataOwner = user.parent_user || user.username;
       const { data: responseData } = await axios.get(
-        `/api/websites?search=${
-          search || searchQuery
-        }&page=${page}&limit=20&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/websites?search=${search || searchQuery
+        }&page=${page}&limit=20&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -92,8 +92,9 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
+      const dataOwner = user.parent_user || user.username;
       const response = await axios.get(
-        `/api/websites/export?group=${user.group}&userType=${user.type}&createdBy=${user.username}`,
+        `/api/websites/export?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`,
         {
           responseType: "blob",
         }
@@ -153,11 +154,10 @@ const PageContent = () => {
 
           {/* Add Website Form */}
           <div
-            className={`grid w-full min-w-0 gap-6 ${
-              showWebsiteForm
-                ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
-                : "grid-cols-1"
-            }`}
+            className={`grid w-full min-w-0 gap-6 ${showWebsiteForm
+              ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
+              : "grid-cols-1"
+              }`}
           >
             {showWebsiteForm && (
               <div className="min-w-0 bg-white p-6 rounded-lg shadow-md flex flex-col space-y-4">

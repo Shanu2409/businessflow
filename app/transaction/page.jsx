@@ -55,7 +55,10 @@ const PageContent = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const creatorParam = user.type === "admin" ? selectedCreator : user.username;
+      const creatorParam =
+        user.type === "admin"
+          ? selectedCreator
+          : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
         `/api/transactions?search=${search}&page=${page}&limit=20&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
@@ -82,7 +85,10 @@ const PageContent = () => {
     if (!user) return;
     const fetchDropdownData = async () => {
       try {
-        const creatorParam = user.type === "admin" ? selectedCreator : user.username;
+        const creatorParam =
+          user.type === "admin"
+            ? selectedCreator
+            : (user.parent_user || user.username);
         const [banksRes, usersRes, websitesRes] = await Promise.all([
           axios.get(`/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
           axios.get(`/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
@@ -242,19 +248,17 @@ const PageContent = () => {
         {/* Header & Form Toggle */}
         <div className="bg-white px-6 py-4 rounded-lg shadow-md">
           <div
-            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${
-              showTransactionForm ? "mb-4" : ""
-            }`}
+            className={`flex flex-col sm:flex-row justify-between items-center transition-all duration-300 ${showTransactionForm ? "mb-4" : ""
+              }`}
           >
             <h1 className="text-3xl font-semibold text-gray-800 transition-all duration-300">
               {showTransactionForm ? "Add New Flow" : "Flows"}
             </h1>
             <button
-              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${
-                showTransactionForm
+              className={`px-6 py-2 rounded-md font-semibold shadow transition duration-300 ${showTransactionForm
                   ? "bg-red-500 hover:bg-red-600 text-white"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
+                }`}
               onClick={toggleForm}
             >
               {showTransactionForm ? "Cancel" : "Add Flow"}
@@ -263,11 +267,10 @@ const PageContent = () => {
         </div>
 
         <div
-          className={`grid w-full min-w-0 gap-6 ${
-            showTransactionForm
+          className={`grid w-full min-w-0 gap-6 ${showTransactionForm
               ? "grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]"
               : "grid-cols-1"
-          }`}
+            }`}
         >
           {showTransactionForm && (
             <div className="min-w-0 bg-white p-6 rounded-lg shadow-md border border-gray-300 transition-all duration-300">
@@ -331,9 +334,8 @@ const PageContent = () => {
                 <div className="flex justify-center md:justify-start items-center space-x-4">
                   {/* Label for Website (OFF State) */}
                   <span
-                    className={`font-semibold ${
-                      !isBankEnabled ? "text-blue-600" : "text-gray-500"
-                    }`}
+                    className={`font-semibold ${!isBankEnabled ? "text-blue-600" : "text-gray-500"
+                      }`}
                   >
                     Website
                   </span>
@@ -350,18 +352,16 @@ const PageContent = () => {
                     />
                     <div className="w-14 h-7 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-all relative">
                       <div
-                        className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
-                          isBankEnabled ? "translate-x-7" : ""
-                        }`}
+                        className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${isBankEnabled ? "translate-x-7" : ""
+                          }`}
                       ></div>
                     </div>
                   </label>
 
                   {/* Label for Bank (ON State) */}
                   <span
-                    className={`font-semibold ${
-                      isBankEnabled ? "text-green-600" : "text-gray-500"
-                    }`}
+                    className={`font-semibold ${isBankEnabled ? "text-green-600" : "text-gray-500"
+                      }`}
                   >
                     BK
                   </span>
@@ -522,21 +522,20 @@ const PageContent = () => {
                       currentRows.map((row, rowIndex) => (
                         <tr
                           key={rowIndex}
-                          className={`text-black ${
-                            row.check == "true" && row.re_check == "true"
+                          className={`text-black ${row.check == "true" && row.re_check == "true"
                               ? "text-gray-800 bg-gray-100"
                               : row.check == "true"
-                              ? "bg-yellow-100"
-                              : row.re_check == "true"
-                              ? "text-gray-800 bg-gray-100"
-                              : isBankEnabled
-                              ? row.transaction_type === "Deposit"
-                                ? "text-green-800 bg-green-100"
-                                : "text-red-800 bg-red-100"
-                              : row.transaction_type === "Deposit"
-                              ? "text-red-800 bg-red-100"
-                              : "text-green-800 bg-green-100"
-                          }`}
+                                ? "bg-yellow-100"
+                                : row.re_check == "true"
+                                  ? "text-gray-800 bg-gray-100"
+                                  : isBankEnabled
+                                    ? row.transaction_type === "Deposit"
+                                      ? "text-green-800 bg-green-100"
+                                      : "text-red-800 bg-red-100"
+                                    : row.transaction_type === "Deposit"
+                                      ? "text-red-800 bg-red-100"
+                                      : "text-green-800 bg-green-100"
+                            }`}
                         >
                           <td className="px-4 py-2 border border-gray-600 text-center">
                             {rowIndex + 1 + (page - 1) * itemsPerPage}
@@ -591,8 +590,8 @@ const PageContent = () => {
                             {isBankEnabled
                               ? row.transaction_type
                               : row.transaction_type === "Deposit"
-                              ? "Withdraw"
-                              : "Deposit"}
+                                ? "Withdraw"
+                                : "Deposit"}
                           </td>
                           {isBankEnabled ? (
                             <td className="px-4 py-2 border border-gray-600">
@@ -612,11 +611,11 @@ const PageContent = () => {
                             <td className="px-4 py-2 border border-gray-600">
                               {isBankEnabled
                                 ? Number(row.effective_balance).toLocaleString(
-                                    "en-IN"
-                                  )
+                                  "en-IN"
+                                )
                                 : Number(row.new_website_balance).toLocaleString(
-                                    "en-IN"
-                                  )}
+                                  "en-IN"
+                                )}
                             </td>
                           }
                           <td className="px-4 py-2 border border-gray-600">

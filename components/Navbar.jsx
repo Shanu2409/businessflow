@@ -38,7 +38,7 @@ const Navbar = () => {
     },
   ];
 
-  if (user?.type === "admin") {
+  if (user?.type === "admin" || user?.type === "user") {
     menuItems.push({
       title: "AC",
       link: "/account",

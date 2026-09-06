@@ -10,8 +10,10 @@ export async function POST(request) {
 
     console.log("username", username);
 
+    const uppercaseUsername = username ? username.toUpperCase() : username;
+
     const user = await Account.findOne({
-      username: username,
+      username: uppercaseUsername,
       password,
     });
 
@@ -19,7 +21,10 @@ export async function POST(request) {
       return NextResponse.json({ Message: "Not found" }, { status: 400 });
     }
 
-    return NextResponse.json(user);
+    const userObj = user.toObject();
+    userObj.data_owner = userObj.parent_user || userObj.username;
+
+    return NextResponse.json(userObj);
   } catch (error) {
     console.log(error);
     return NextResponse.json(

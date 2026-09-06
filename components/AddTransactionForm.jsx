@@ -61,10 +61,11 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
+    const dataOwner = user.parent_user || user.username;
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       const bankData = responseData?.data || [];
 
@@ -82,10 +83,11 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
+    const dataOwner = user.parent_user || user.username;
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -103,10 +105,11 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
+    const dataOwner = user.parent_user || user.username;
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${user.username}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));
@@ -142,6 +145,7 @@ const AddTransactionForm = ({
     }
 
     let user = JSON.parse(sessionStorage.getItem("user") || "{}");
+    const dataOwner = user.parent_user || user.username;
 
     try {
       const response = await axios.post("/api/transactions", {
@@ -150,7 +154,7 @@ const AddTransactionForm = ({
         bank_name: selectedBank,
         transaction_type: transactionType,
         amount: numericAmount,
-        created_by: user.username,
+        created_by: dataOwner,
         group: user.group,
       });
 

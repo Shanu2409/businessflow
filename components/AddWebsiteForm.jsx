@@ -97,7 +97,7 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
           website_name: websiteName,
           url: url,
           current_balance: currentBalance,
-          created_by: user?.username,
+          created_by: user?.parent_user || user?.username,
           group: user?.group,
         });
 

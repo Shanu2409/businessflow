@@ -25,18 +25,19 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     if (typeof window !== "undefined") {
       user = JSON.parse(sessionStorage.getItem("user"));
     }
+    const dataOwner = user.parent_user || user.username;
     try {
       const response = await axios.put(
-        `/api/accounts/${data.username}?group=${user.group}`,
+        `/api/accounts/${data.username}?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`,
         {
           password: data.password,
         }
       );
-      toast.success(response?.data?.message);
+      toast.success(response?.data?.Message || response?.data?.message || "User updated successfully");
       fetchData();
     } catch (error) {
       console.error("Error editing user:", error);
-      toast.error("Failed to update user.");
+      toast.error(error.response?.data?.Message || "Failed to update user.");
     }
     setLoading(false);
   };
@@ -59,7 +60,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
     setLoading(true);
     let user = {};
     if (typeof window !== "undefined") {
-      user = JSON.parse(sessionStorage.getItem("user"));
+      user = JSON.parse(sessionStorage.getItem("user") || "{}");
     }
     try {
       try {
@@ -67,6 +68,8 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
           username,
           password,
           group: user.group,
+          created_by: user.username,
+          parent_user: user.parent_user || user.username,
         });
 
         toast.success(response.data.Message || "User added successfully");

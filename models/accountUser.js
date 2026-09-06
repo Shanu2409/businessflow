@@ -9,6 +9,16 @@ const accountUserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   type: { type: String, enum: ["admin", "user"], default: "user" },
   group: { type: String, required: true },
+  created_by: {
+    type: String,
+    default: null,
+    set: (value) => (value ? value.toUpperCase() : value),
+  },
+  parent_user: {
+    type: String,
+    default: null,
+    set: (value) => (value ? value.toUpperCase() : value),
+  },
   createdAt: { type: Date, default: Date.now },
   allowed_banks: { type: Array, default: [] },
 });
