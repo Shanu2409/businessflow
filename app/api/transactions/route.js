@@ -4,6 +4,115 @@ import Transaction from "@/models/transaction";
 import Website from "@/models/website";
 import { NextResponse } from "next/server";
 
+let hasSynced = false;
+let isSyncing = false;
+
+async function syncAllBalances() {
+  if (hasSynced || isSyncing) return;
+  isSyncing = true;
+  try {
+    await connection();
+
+    // 1. Recalculate bank balances per bank
+    const allBanks = await Bank.find({});
+    for (const bank of allBanks) {
+      const bankFilter = { bank_name: bank.bank_name };
+      if (bank.group) bankFilter.group = bank.group;
+
+      const bankTxs = await Transaction.find(bankFilter).sort({ createdAt: 1 });
+      if (bankTxs.length === 0) continue;
+
+      let runningBalance =
+        typeof bankTxs[0].old_bank_balance === "number"
+          ? Number(bankTxs[0].old_bank_balance)
+          : Number(bank.current_balance) || 0;
+
+      const bulkOps = [];
+      for (const tx of bankTxs) {
+        const amount = Number(tx.amount) || 0;
+        const type = tx.transaction_type || "Deposit";
+        const oldBalance = runningBalance;
+        const effectiveBalance =
+          type === "Deposit" ? runningBalance + amount : runningBalance - amount;
+        runningBalance = effectiveBalance;
+
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: tx._id },
+            update: {
+              $set: {
+                old_bank_balance: oldBalance,
+                effective_balance: effectiveBalance,
+              },
+            },
+          },
+        });
+      }
+
+      if (bulkOps.length > 0) {
+        await Transaction.bulkWrite(bulkOps);
+      }
+
+      await Bank.updateOne(
+        { _id: bank._id },
+        { $set: { current_balance: runningBalance } }
+      );
+    }
+
+    // 2. Recalculate website balances per website
+    const allWebsites = await Website.find({});
+    for (const website of allWebsites) {
+      const webFilter = { website_name: website.website_name };
+      if (website.group) webFilter.group = website.group;
+
+      const webTxs = await Transaction.find(webFilter).sort({ createdAt: 1 });
+      if (webTxs.length === 0) continue;
+
+      let runningBalance =
+        typeof webTxs[0].old_website_balance === "number"
+          ? Number(webTxs[0].old_website_balance)
+          : Number(website.current_balance) || 0;
+
+      const bulkOps = [];
+      for (const tx of webTxs) {
+        const amount = Number(tx.amount) || 0;
+        const type = tx.transaction_type || "Deposit";
+        const oldBalance = runningBalance;
+        const newBalance =
+          type === "Deposit" ? runningBalance - amount : runningBalance + amount;
+        runningBalance = newBalance;
+
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: tx._id },
+            update: {
+              $set: {
+                old_website_balance: oldBalance,
+                new_website_balance: newBalance,
+              },
+            },
+          },
+        });
+      }
+
+      if (bulkOps.length > 0) {
+        await Transaction.bulkWrite(bulkOps);
+      }
+
+      await Website.updateOne(
+        { _id: website._id },
+        { $set: { current_balance: runningBalance } }
+      );
+    }
+
+    hasSynced = true;
+  } catch (err) {
+    console.error("Error during syncAllBalances:", err);
+  } finally {
+    isSyncing = false;
+  }
+}
+
 export async function POST(request) {
   try {
     await connection();
@@ -43,61 +152,56 @@ export async function POST(request) {
     }
 
     // Fetch bank and website balances specifically for this creator & group
-    let bank = await Bank.findOne(
-      { bank_name: uppercaseBankName, group, created_by: uppercaseCreatedBy },
-      { current_balance: 1 }
-    );
+    let bank = await Bank.findOne({
+      bank_name: uppercaseBankName,
+      group,
+      created_by: uppercaseCreatedBy,
+    });
 
-    let website = await Website.findOne(
-      { website_name: uppercaseWebsiteName, group, created_by: uppercaseCreatedBy },
-      { current_balance: 1 }
-    );
-
-    // Fallback: If admin is operating without matching created_by, match by bank_name & group
     if (!bank) {
-      bank = await Bank.findOne(
-        { bank_name: uppercaseBankName, group },
-        { current_balance: 1, created_by: 1 }
-      );
+      bank = await Bank.findOne({
+        bank_name: uppercaseBankName,
+        group,
+      });
     }
+
+    let website = await Website.findOne({
+      website_name: uppercaseWebsiteName,
+      group,
+      created_by: uppercaseCreatedBy,
+    });
+
     if (!website) {
-      website = await Website.findOne(
-        { website_name: uppercaseWebsiteName, group },
-        { current_balance: 1, created_by: 1 }
-      );
+      website = await Website.findOne({
+        website_name: uppercaseWebsiteName,
+        group,
+      });
     }
 
     const bankBalance = bank ? Number(bank.current_balance) : 0;
     const websiteBalance = website ? Number(website.current_balance) : 0;
 
-    const targetCreator = bank ? bank.created_by : uppercaseCreatedBy;
-
-    // Perform transaction balance updates
-    if (transaction_type === "Deposit") {
+    // Perform transaction balance updates directly by _id
+    if (bank) {
+      const bankInc =
+        transaction_type === "Deposit" ? numericAmount : -numericAmount;
       await Bank.updateOne(
-        { bank_name: uppercaseBankName, group, created_by: targetCreator },
+        { _id: bank._id },
         {
-          $inc: { current_balance: numericAmount },
+          $inc: { current_balance: bankInc },
           $set: { check: false },
         }
       );
+    }
 
+    if (website) {
+      const websiteInc =
+        transaction_type === "Deposit" ? -numericAmount : numericAmount;
       await Website.updateOne(
-        { website_name: uppercaseWebsiteName, group, created_by: targetCreator },
-        { $inc: { current_balance: -numericAmount } }
-      );
-    } else if (transaction_type === "Withdraw") {
-      await Bank.updateOne(
-        { bank_name: uppercaseBankName, group, created_by: targetCreator },
+        { _id: website._id },
         {
-          $inc: { current_balance: -numericAmount },
-          $set: { check: false },
+          $inc: { current_balance: websiteInc },
         }
-      );
-
-      await Website.updateOne(
-        { website_name: uppercaseWebsiteName, group, created_by: targetCreator },
-        { $inc: { current_balance: numericAmount } }
       );
     }
 
@@ -153,6 +257,11 @@ export async function GET(request) {
 
     await connection();
 
+    // Auto-sync historical transaction balances once if needed
+    if (!hasSynced) {
+      await syncAllBalances();
+    }
+
     const uppercaseSearch = search ? search.toUpperCase() : "";
 
     const query = {
@@ -193,61 +302,92 @@ export async function GET(request) {
       .limit(limit)
       .skip((page - 1) * limit);
 
-    // Compute running balances in chronological order and map them back
+    // Compute running balances per bank and website independently
     try {
       // Create chronological copy (oldest first)
       const chronological = [...transactions].sort(
         (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
       );
 
+      const bankLastEffective = new Map();
+      const websiteLastEffective = new Map();
       const balanceMap = new Map();
 
       for (let i = 0; i < chronological.length; i++) {
         const tx = chronological[i];
+        const bankKey = tx.bank_name || "UNKNOWN";
+        const websiteKey = tx.website_name || "UNKNOWN";
         const amount = Number(tx.amount) || 0;
         const type = tx.transaction_type || "Deposit";
 
-        let current = null;
-
-        if (i === 0) {
+        // Bank balance calculation (strictly isolated by bank_name)
+        let bankCurrent = null;
+        if (!bankLastEffective.has(bankKey)) {
           if (typeof tx.old_bank_balance === "number") {
-            current = Number(tx.old_bank_balance);
+            bankCurrent = Number(tx.old_bank_balance);
           } else if (typeof tx.effective_balance === "number") {
-            // derive opening balance from stored effective_balance when possible
-            current =
+            bankCurrent =
               type === "Deposit"
                 ? Number(tx.effective_balance) - amount
                 : Number(tx.effective_balance) + amount;
           } else {
-            current = 0;
+            bankCurrent = 0;
           }
         } else {
-          // opening balance is previous tx's effective balance
-          current = Number(chronological[i - 1].effective_balance_computed || chronological[i - 1].effective_balance || 0);
+          bankCurrent = bankLastEffective.get(bankKey);
         }
 
-        const effective = type === "Deposit" ? current + amount : current - amount;
+        const bankEffective =
+          type === "Deposit" ? bankCurrent + amount : bankCurrent - amount;
+        bankLastEffective.set(bankKey, bankEffective);
 
-        // store computed values on the chronological object for next iterations
-        chronological[i].effective_balance_computed = effective;
+        // Website balance calculation (strictly isolated by website_name)
+        let websiteCurrent = null;
+        if (!websiteLastEffective.has(websiteKey)) {
+          if (typeof tx.old_website_balance === "number") {
+            websiteCurrent = Number(tx.old_website_balance);
+          } else if (typeof tx.new_website_balance === "number") {
+            websiteCurrent =
+              type === "Deposit"
+                ? Number(tx.new_website_balance) + amount
+                : Number(tx.new_website_balance) - amount;
+          } else {
+            websiteCurrent = 0;
+          }
+        } else {
+          websiteCurrent = websiteLastEffective.get(websiteKey);
+        }
 
-        // map by id for re-mapping to original order
+        const websiteEffective =
+          type === "Deposit"
+            ? websiteCurrent - amount
+            : websiteCurrent + amount;
+        websiteLastEffective.set(websiteKey, websiteEffective);
+
         balanceMap.set(String(tx._id), {
-          current: current,
-          effective: effective,
+          bankCurrent,
+          bankEffective,
+          websiteCurrent,
+          websiteEffective,
         });
       }
 
-      // Attach computed balances back to the original transactions array
+      // Attach computed balances back to original transactions array
       const transactionsWithRunning = transactions.map((tx) => {
         const key = String(tx._id);
         if (balanceMap.has(key)) {
-          const { current, effective } = balanceMap.get(key);
-          // overwrite old_bank_balance and effective_balance with computed running values
+          const {
+            bankCurrent,
+            bankEffective,
+            websiteCurrent,
+            websiteEffective,
+          } = balanceMap.get(key);
           return {
             ...tx.toObject(),
-            old_bank_balance: current,
-            effective_balance: effective,
+            old_bank_balance: bankCurrent,
+            effective_balance: bankEffective,
+            old_website_balance: websiteCurrent,
+            new_website_balance: websiteEffective,
           };
         }
         return tx;
@@ -255,7 +395,6 @@ export async function GET(request) {
 
       return NextResponse.json({ data: transactionsWithRunning, totalData });
     } catch (err) {
-      // In case of any error during running-balance computation, return raw data
       console.error("Running balance compute error:", err);
       return NextResponse.json({ data: transactions, totalData });
     }
@@ -285,6 +424,10 @@ export async function PUT(request) {
       { _id: tid },
       { $set: { [field]: valueToUpdate } }
     );
+
+    if (["amount", "transaction_type", "bank_name", "website_name"].includes(field)) {
+      hasSynced = false;
+    }
 
     return NextResponse.json({ Message: "Data updated successfully", result });
   } catch (error) {
