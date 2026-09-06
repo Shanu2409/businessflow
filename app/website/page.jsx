@@ -34,14 +34,26 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [history, setHistory] = useState([]);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const parsed = JSON.parse(sessionStorage.getItem("user") || "null");
+        return parsed?.username ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userData = JSON.parse(sessionStorage.getItem("user"));
-      setUser(userData);
+      const userData = JSON.parse(sessionStorage.getItem("user") || "null");
+      if (!user && userData?.username) {
+        setUser(userData);
+      }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -56,10 +68,11 @@ const PageContent = () => {
     const searchQuery = searchParams.get("search") || "";
 
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
         `/api/websites?search=${search || searchQuery
-        }&page=${page}&limit=20&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        }&page=${page}&limit=20&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -92,9 +105,10 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const response = await axios.get(
-        `/api/websites/export?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`,
+        `/api/websites/export?group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`,
         {
           responseType: "blob",
         }

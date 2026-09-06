@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import AddBankForm from "@/components/AddBankForm";
 import Navbar from "@/components/Navbar";
 import axios from "axios";
@@ -26,8 +26,8 @@ const PageContent = () => {
   const [showAddAccountForm, setShowAddAccountForm] = useState(
     searchParams.get("add") === "true"
   );
-  const [search, setSearch] = useState("");
-  const [searchValue, setSearchValue] = useState(""); // New state for immediate input updates
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = useState(search); // New state for immediate input updates
   const [debouncedSearch] = useDebounce(searchValue, 500); // 500ms debounce
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
@@ -36,18 +36,39 @@ const PageContent = () => {
   const [loading, setLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({}); // Track password visibility
   const [isFilterOpen, setIsFilterOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const parsed = JSON.parse(sessionStorage.getItem("user") || "null");
+        return parsed?.username ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
-      if (!userData || !userData.username) {
+      const stored = sessionStorage.getItem("user");
+      if (!stored) {
         router.push("/login");
         return;
       }
-      setUser(userData);
+      try {
+        const userData = JSON.parse(stored);
+        if (!userData || !userData.username) {
+          router.push("/login");
+          return;
+        }
+        if (!user || user.username !== userData.username) {
+          setUser(userData);
+        }
+      } catch {
+        router.push("/login");
+      }
     }
-  }, [router]);
+  }, [router, user]);
 
   // Update search state when debounced value changes
   useEffect(() => {
@@ -61,14 +82,16 @@ const PageContent = () => {
 
   const itemsPerPage = 20;
 
-  const fetchBankData = async () => {
+  const fetchBankData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const dataOwner = user.parent_user || user.username;
+    const creatorParam =
+      user.type === "admin"
+        ? ""
+        : (user.parent_user || user.username);
     try {
       const { data: responseData } = await axios.get(
-        `/api/accounts?search=${search || searchParams.get("search") || ""
-        }&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/accounts?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -76,14 +99,21 @@ const PageContent = () => {
       console.error("Error fetching account data:", error);
     }
     setLoading(false);
-  };
+  }, [search, page, user, itemsPerPage]);
+
+  useEffect(() => {
+    fetchBankData();
+  }, [fetchBankData]);
 
   const handleDelete = async (id) => {
     if (confirm(`Are you sure you want to delete account ${id}?`)) {
       try {
-        const dataOwner = user.parent_user || user.username;
+        const creatorParam =
+          user.type === "admin"
+            ? ""
+            : (user.parent_user || user.username);
         await axios.delete(
-          `/api/accounts/${id}?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+          `/api/accounts/${id}?group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
         );
         toast.success("Account deleted successfully.");
         fetchBankData();
@@ -105,13 +135,6 @@ const PageContent = () => {
       [id]: !prev[id], // Toggle only for the clicked row
     }));
   };
-
-  // Trigger fetch when user is loaded, or when search / page changes
-  useEffect(() => {
-    if (user) {
-      fetchBankData();
-    }
-  }, [user, search, page]);
 
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
   const currentRows = data; // Since API already returns paginated data
@@ -250,7 +273,7 @@ const PageContent = () => {
                           <span>
                             {showPasswords[row.username]
                               ? row?.password
-                              : "•".repeat(row?.password.length)}
+                              : "•".repeat(row?.password ? String(row.password).length : 8)}
                           </span>
                           <button
                             onClick={(e) => {

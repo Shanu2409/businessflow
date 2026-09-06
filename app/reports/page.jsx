@@ -189,16 +189,17 @@ const ReportsPage = () => {
   const fetchReferenceData = useCallback(async () => {
     if (!user) return;
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const [banksRes, websitesRes, usersRes] = await Promise.all([
         axios.get(
-          `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+          `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
         ),
         axios.get(
-          `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+          `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
         ),
         axios.get(
-          `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+          `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
         ),
       ]);
 
@@ -228,12 +229,13 @@ const ReportsPage = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const response = await axios.post("/api/reports", {
         reportType,
         group: user.group,
         userType: user.type,
-        createdBy: dataOwner,
+        createdBy: creatorParam,
         ...filters,
       });
 

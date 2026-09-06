@@ -91,9 +91,10 @@ const HomeMenu = () => {
   const fetchWebsiteList = async () => {
     try {
       const user = JSON.parse(sessionStorage.getItem("user") || "{}");
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -106,9 +107,10 @@ const HomeMenu = () => {
   const fetchUserList = async () => {
     try {
       const user = JSON.parse(sessionStorage.getItem("user") || "{}");
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));

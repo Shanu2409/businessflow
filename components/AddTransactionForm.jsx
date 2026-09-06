@@ -61,11 +61,12 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
-    const dataOwner = user.parent_user || user.username;
+    const creatorParam =
+      user.type === "admin" ? "" : (user.parent_user || user.username);
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/banks?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       const bankData = responseData?.data || [];
 
@@ -83,11 +84,12 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
-    const dataOwner = user.parent_user || user.username;
+    const creatorParam =
+      user.type === "admin" ? "" : (user.parent_user || user.username);
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("websites", JSON.stringify(responseData?.data));
@@ -105,11 +107,12 @@ const AddTransactionForm = ({
     if (!userRaw) return;
 
     const user = JSON.parse(userRaw);
-    const dataOwner = user.parent_user || user.username;
+    const creatorParam =
+      user.type === "admin" ? "" : (user.parent_user || user.username);
 
     try {
       const { data: responseData } = await axios.get(
-        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       if (typeof window !== "undefined") {
         sessionStorage.setItem("users", JSON.stringify(responseData?.data));

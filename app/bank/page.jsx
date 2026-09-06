@@ -18,7 +18,6 @@ import {
 const PageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState(null);
   const [showAddBankForm, setShowAddBankForm] = useState(
     searchParams.get("add") === "true"
   );
@@ -27,6 +26,17 @@ const PageContent = () => {
   const [debouncedSearch] = useDebounce(searchValue, 500);
   const [page, setPage] = useState(1);
   const [totalData, setTotalData] = useState(0);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const parsed = JSON.parse(sessionStorage.getItem("user") || "null");
+        return parsed?.username ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,10 +45,12 @@ const PageContent = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userData = JSON.parse(sessionStorage.getItem("user"));
-      setUser(userData);
+      const userData = JSON.parse(sessionStorage.getItem("user") || "null");
+      if (!user && userData?.username) {
+        setUser(userData);
+      }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -48,9 +60,10 @@ const PageContent = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
-        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/banks?search=${search}&page=${page}&limit=${itemsPerPage}&sort=${sortLabel}&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
@@ -76,9 +89,10 @@ const PageContent = () => {
 
   const handleExport = async () => {
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const response = await axios.get(
-        `/api/banks/export?group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`,
+        `/api/banks/export?group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`,
         {
           responseType: "blob",
         }

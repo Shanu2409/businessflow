@@ -32,16 +32,28 @@ const PageContent = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const parsed = JSON.parse(sessionStorage.getItem("user") || "null");
+        return parsed?.username ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
   const itemsPerPage = 20;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userData = JSON.parse(sessionStorage.getItem("user"));
-      setUser(userData);
+      const userData = JSON.parse(sessionStorage.getItem("user") || "null");
+      if (!user && userData?.username) {
+        setUser(userData);
+      }
     }
-  }, []);
+  }, [user]);
 
   // Update search when debounced value changes
   useEffect(() => {
@@ -53,9 +65,10 @@ const PageContent = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const dataOwner = user.parent_user || user.username;
+      const creatorParam =
+        user.type === "admin" ? "" : (user.parent_user || user.username);
       const { data: responseData } = await axios.get(
-        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${dataOwner}`
+        `/api/users?search=${search}&page=${page}&limit=${itemsPerPage}&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`
       );
       setData(responseData?.data || []);
       setTotalData(responseData?.totalData || 0);
