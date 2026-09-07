@@ -20,7 +20,7 @@ export const DropdownMenu = ({
   const router = useRouter();
   // Filter options based on search input
   const filteredOptions = options.filter((option) =>
-    option.toUpperCase().startsWith(searchTerm.toUpperCase())
+    option.toUpperCase().includes(searchTerm.toUpperCase())
   );
 
   // Reset highlighted index when filtered options change

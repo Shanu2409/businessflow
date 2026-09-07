@@ -33,6 +33,13 @@ const transactionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for ultra-fast query execution and sorting
+transactionSchema.index({ group: 1, created_by: 1, createdAt: -1 });
+transactionSchema.index({ group: 1, createdAt: -1 });
+transactionSchema.index({ bank_name: 1, group: 1, createdAt: -1 });
+transactionSchema.index({ website_name: 1, group: 1, createdAt: -1 });
+transactionSchema.index({ username: 1, group: 1 });
+
 const Transaction =
   mongoose.models.transactions ||
   mongoose.model("transactions", transactionSchema);

@@ -42,88 +42,81 @@ export async function POST(request) {
       );
     }
 
-    // Fetch bank and website balances specifically for this creator & group
-    let bank = await Bank.findOne({
-      bank_name: uppercaseBankName,
-      group,
-      created_by: uppercaseCreatedBy,
-    });
-
-    if (!bank) {
-      bank = await Bank.findOne({
+    // 1. Concurrent lookups for Bank & Website with fallback
+    const [bank, website] = await Promise.all([
+      Bank.findOne({
         bank_name: uppercaseBankName,
         group,
-      });
-    }
-
-    let website = await Website.findOne({
-      website_name: uppercaseWebsiteName,
-      group,
-      created_by: uppercaseCreatedBy,
-    });
-
-    if (!website) {
-      website = await Website.findOne({
+        created_by: uppercaseCreatedBy,
+      }).then((b) =>
+        b || Bank.findOne({ bank_name: uppercaseBankName, group })
+      ),
+      Website.findOne({
         website_name: uppercaseWebsiteName,
         group,
-      });
-    }
+        created_by: uppercaseCreatedBy,
+      }).then((w) =>
+        w || Website.findOne({ website_name: uppercaseWebsiteName, group })
+      ),
+    ]);
 
-    const bankBalance = bank ? Number(bank.current_balance) : 0;
-    const websiteBalance = website ? Number(website.current_balance) : 0;
+    const bankInc =
+      transaction_type === "Deposit" ? numericAmount : -numericAmount;
+    const websiteInc =
+      transaction_type === "Deposit" ? -numericAmount : numericAmount;
 
-    // Perform transaction balance updates directly by _id
-    if (bank) {
-      const bankInc =
-        transaction_type === "Deposit" ? numericAmount : -numericAmount;
-      await Bank.updateOne(
-        { _id: bank._id },
-        {
-          $inc: { current_balance: bankInc },
-          $set: { check: false },
-        }
-      );
-    }
+    // 2. Atomic concurrent updates using findByIdAndUpdate with $inc
+    // Returns the exact updated document atomically, preventing any concurrency race conditions
+    const [updatedBank, updatedWebsite] = await Promise.all([
+      bank
+        ? Bank.findByIdAndUpdate(
+            bank._id,
+            {
+              $inc: { current_balance: bankInc },
+              $set: { check: false },
+            },
+            { new: true }
+          )
+        : null,
+      website
+        ? Website.findByIdAndUpdate(
+            website._id,
+            {
+              $inc: { current_balance: websiteInc },
+            },
+            { new: true }
+          )
+        : null,
+    ]);
 
-    if (website) {
-      const websiteInc =
-        transaction_type === "Deposit" ? -numericAmount : numericAmount;
-      await Website.updateOne(
-        { _id: website._id },
-        {
-          $inc: { current_balance: websiteInc },
-        }
-      );
-    }
+    const newBankBalance = updatedBank
+      ? Number(updatedBank.current_balance)
+      : 0;
+    const oldBankBalance = newBankBalance - bankInc;
 
-    const newBankBalance =
-      transaction_type === "Deposit"
-        ? bankBalance + numericAmount
-        : bankBalance - numericAmount;
+    const newWebsiteBalance = updatedWebsite
+      ? Number(updatedWebsite.current_balance)
+      : 0;
+    const oldWebsiteBalance = newWebsiteBalance - websiteInc;
 
-    const newWebsiteBalance =
-      transaction_type === "Deposit"
-        ? websiteBalance - numericAmount
-        : websiteBalance + numericAmount;
-
-    const newTransaction = new Transaction({
+    // 3. Create and save new transaction
+    const newTransaction = await Transaction.create({
       bank_name: uppercaseBankName,
       username: uppercaseUsername,
       website_name: uppercaseWebsiteName,
       transaction_type,
-      old_bank_balance: bankBalance,
+      old_bank_balance: oldBankBalance,
       effective_balance: newBankBalance,
-      old_website_balance: websiteBalance,
+      old_website_balance: oldWebsiteBalance,
       new_website_balance: newWebsiteBalance,
       amount: numericAmount,
       created_by: uppercaseCreatedBy,
       group,
     });
 
-    await newTransaction.save();
-
     return NextResponse.json({
       message: "Transaction created successfully",
+      data: newTransaction,
     });
   } catch (error) {
     console.error("Error creating transaction:", error);
@@ -185,15 +178,17 @@ export async function GET(request) {
       }
     }
 
-    const totalData = await Transaction.countDocuments(query);
-
-    const transactions = await Transaction.find(query, {
-      __v: 0,
-    })
-      .sort(sort || "-createdAt")
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .lean();
+    // Run count and query in parallel
+    const [totalData, transactions] = await Promise.all([
+      Transaction.countDocuments(query),
+      Transaction.find(query, {
+        __v: 0,
+      })
+        .sort(sort || "-createdAt")
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .lean(),
+    ]);
 
     return NextResponse.json({ data: transactions, totalData });
   } catch (error) {

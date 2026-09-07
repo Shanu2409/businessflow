@@ -39,24 +39,33 @@ const PageContent = () => {
   const [isBankEnabled, setIsBankEnabled] = useState(true);
   const router = useRouter();
 
-  // Get user from sessionStorage
+  const [selectedCreator, setSelectedCreator] = useState("");
+  const [operatorsList, setOperatorsList] = useState([]);
+  const [dropdownBanks, setDropdownBanks] = useState([]);
+  const [dropdownUsers, setDropdownUsers] = useState({});
+  const [dropdownWebsites, setDropdownWebsites] = useState([]);
+
+  // Get user and initial dropdown cache from sessionStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = JSON.parse(sessionStorage.getItem("user"));
       setUser(userData);
+      const b = JSON.parse(sessionStorage.getItem("banks") || "[]");
+      const u = JSON.parse(sessionStorage.getItem("users") || "{}");
+      const w = JSON.parse(sessionStorage.getItem("websites") || "[]");
+      if (b.length) setDropdownBanks(b);
+      if (Object.keys(u).length) setDropdownUsers(u);
+      if (w.length) setDropdownWebsites(w);
     }
   }, []);
 
-  const [selectedCreator, setSelectedCreator] = useState("");
-  const [operatorsList, setOperatorsList] = useState([]);
-
-  // Fetch Transactions (Optimized with useCallback)
-  const fetchTransactions = useCallback(async () => {
+  // Fetch Transactions (Optimized with optional non-blocking showLoader)
+  const fetchTransactions = useCallback(async (showLoader = true) => {
     if (!user) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const creatorParam =
         user.type === "admin"
@@ -75,9 +84,22 @@ const PageContent = () => {
         "Failed to load transactions.";
       toast.error(errMsg);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }, [search, page, sortLabel, user, selectedCreator]);
+
+  // Instantly prepend newly added transaction to local state
+  const handleTransactionAdded = useCallback((newTx) => {
+    if (!newTx) return;
+    setData((prev) => {
+      const exists = prev.some((item) => item._id === newTx._id);
+      if (exists) return prev;
+      return [newTx, ...prev.slice(0, 19)];
+    });
+    setTotalData((prev) => prev + 1);
+    // Silent background fetch to reconcile totals without blocking UI
+    fetchTransactions(false);
+  }, [fetchTransactions]);
 
   // Update useEffect to listen for debounced search changes
   useEffect(() => {
@@ -103,12 +125,15 @@ const PageContent = () => {
           axios.get(`/api/users?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
           axios.get(`/api/websites?onlyNames=true&group=${user.group}&userType=${user.type}&createdBy=${creatorParam}`),
         ]);
-        sessionStorage.setItem("banks", JSON.stringify(banksRes.data.data));
-        sessionStorage.setItem("users", JSON.stringify(usersRes.data.data));
-        sessionStorage.setItem(
-          "websites",
-          JSON.stringify(websitesRes.data.data)
-        );
+        const banksData = banksRes.data?.data || [];
+        const usersData = usersRes.data?.data || {};
+        const websitesData = websitesRes.data?.data || [];
+        setDropdownBanks(banksData);
+        setDropdownUsers(usersData);
+        setDropdownWebsites(websitesData);
+        sessionStorage.setItem("banks", JSON.stringify(banksData));
+        sessionStorage.setItem("users", JSON.stringify(usersData));
+        sessionStorage.setItem("websites", JSON.stringify(websitesData));
 
         if (user.type === "admin") {
           const accountsRes = await axios.get(`/api/accounts?group=${user.group}`);
@@ -292,6 +317,10 @@ const PageContent = () => {
                 editData={editData}
                 setShowTransactionForm={setShowTransactionForm}
                 fetchData={fetchTransactions}
+                onTransactionAdded={handleTransactionAdded}
+                initialBanks={dropdownBanks}
+                initialWebsites={dropdownWebsites}
+                initialUsers={dropdownUsers}
               />
             </div>
           )}
@@ -384,8 +413,14 @@ const PageContent = () => {
             </div>
 
             {/* Flows Table */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-full overflow-x-auto">
+            <div className="bg-white p-6 rounded-lg shadow-md relative overflow-hidden">
+              {/* Subtle top loading indicator */}
+              {loading && data.length > 0 && (
+                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-100 overflow-hidden z-20">
+                  <div className="w-full h-full bg-blue-600 animate-pulse"></div>
+                </div>
+              )}
+              <div className={`w-full overflow-x-auto transition-opacity duration-200 ${loading && data.length > 0 ? "opacity-75" : "opacity-100"}`}>
                 {/* Pagination Controls */}
                 {data.length > 0 && (
                   <div className="flex justify-between items-center m-4">
@@ -685,7 +720,7 @@ const PageContent = () => {
         </div>
       </div>
 
-      <FullScreenLoader isLoading={loading} />
+      <FullScreenLoader isLoading={loading && data.length === 0} />
     </div>
   );
 };

@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ username: 1, created_by: 1, group: 1 }, { unique: true });
+userSchema.index({ group: 1, created_by: 1, username: 1 });
+userSchema.index({ group: 1, username: 1 });
 
 const UserModal =
   mongoose.models.userClient || mongoose.model("userClient", userSchema);
