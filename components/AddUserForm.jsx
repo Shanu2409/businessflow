@@ -271,7 +271,6 @@ const AddUserForm = ({ setShowAddUserForm, fetchData, editData }) => {
       setEmail("");
       setSelectedWebsite("");
       setIsActive(true);
-      setShowAddUserForm(false);
       if (fetchData) await fetchData();
       await fetchUserList();
     } catch (err) {

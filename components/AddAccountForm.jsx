@@ -75,7 +75,6 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
       toast.success(response.data?.Message || "User added successfully");
       setUsername("");
       setPassword("");
-      setShowAddAccountForm(false);
       if (fetchData) await fetchData();
     } catch (err) {
       console.error("Error adding user:", err);
@@ -93,7 +92,7 @@ const AddAccountForm = ({ setShowAddAccountForm, fetchData, editData }) => {
 
   return (
     <>
-      <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md mx-auto p-4">
         <h2 className="text-2xl font-bold text-center mb-6">
           {editData ? "Edit User" : "Add User"}
         </h2>

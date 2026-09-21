@@ -34,13 +34,12 @@ export async function POST(request) {
 
     const existingUser = await UserModal.findOne({
       username: uppercaseUsername,
-      created_by: uppercaseCreatedBy,
       group,
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { Message: "User with this username already exists for this creator" },
+        { Message: "User with this username already exists in this group" },
         { status: 400 }
       );
     }
@@ -80,11 +79,6 @@ export async function GET(request) {
     await connection();
 
     const baseFilter = { group };
-    if (userType === "user" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    }
 
     if (onlyNames === "true") {
       const users = await UserModal.find(baseFilter, {
@@ -115,7 +109,8 @@ export async function GET(request) {
     const users = await UserModal.find(query, { __v: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     return NextResponse.json({ data: users, totalData });
   } catch (error) {

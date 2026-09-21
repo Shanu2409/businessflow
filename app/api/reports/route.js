@@ -31,12 +31,6 @@ export async function POST(request) {
     const userIsolationFilter = {};
     if (group) userIsolationFilter.group = group;
 
-    if (userType === "user" && createdBy) {
-      userIsolationFilter.created_by = createdBy.toUpperCase();
-    } else if (creatorFilter) {
-      userIsolationFilter.created_by = creatorFilter.toUpperCase();
-    }
-
     const dateFilter = {};
     if (startDate) {
       const startDateTime = startTime
@@ -513,11 +507,6 @@ export async function GET(request) {
 
     const filter = {};
     if (group) filter.group = group;
-    if (userType === "user" && createdBy) {
-      filter.created_by = createdBy.toUpperCase();
-    } else if (createdBy) {
-      filter.created_by = createdBy.toUpperCase();
-    }
 
     if (startDate) {
       filter.createdAt = { $gte: new Date(startDate) };

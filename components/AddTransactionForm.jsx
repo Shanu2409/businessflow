@@ -191,7 +191,7 @@ const AddTransactionForm = ({
         }
       } else {
         resetForm();
-        if (setShowTransactionForm) {
+        if (editData && setShowTransactionForm) {
           setShowTransactionForm(false);
         }
       }

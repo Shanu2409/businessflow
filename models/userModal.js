@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-userSchema.index({ username: 1, created_by: 1, group: 1 }, { unique: true });
+userSchema.index({ username: 1, group: 1 }, { unique: true });
 userSchema.index({ group: 1, created_by: 1, username: 1 });
 userSchema.index({ group: 1, username: 1 });
 

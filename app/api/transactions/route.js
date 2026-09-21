@@ -147,11 +147,6 @@ export async function GET(request) {
       query.group = group;
     }
 
-    if (userType === "user" && createdBy) {
-      query.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      query.created_by = createdBy.toUpperCase();
-    }
 
     const trimmedSearch = search.trim();
     if (trimmedSearch) {

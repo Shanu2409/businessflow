@@ -17,11 +17,7 @@ export async function GET(request) {
 
     const matchQuery = {};
     if (group) matchQuery.group = group;
-    if (userType === "user" && createdBy) {
-      matchQuery.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      matchQuery.created_by = createdBy.toUpperCase();
-    }
+
 
     const accountQuery = { type: "user" };
     if (group) accountQuery.group = group;

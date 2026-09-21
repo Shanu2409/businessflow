@@ -56,7 +56,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
       ifsc_code: "",
       current_balance: "",
     });
-    setShowAddBankForm(false);
   };
 
   // Submit Form
@@ -108,6 +107,7 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
       }
 
       resetForm();
+      if (editData) setShowAddBankForm(false);
       if (fetchData) {
         await fetchData();
       }

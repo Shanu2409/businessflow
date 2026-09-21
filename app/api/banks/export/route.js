@@ -14,11 +14,6 @@ export async function GET(request) {
 
     const query = {};
     if (group) query.group = group;
-    if (userType === "user" && createdBy) {
-      query.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      query.created_by = createdBy.toUpperCase();
-    }
 
     const banks = await Bank.find(query).select(
       "bank_name ifsc_code account_number current_balance created_by group -_id"

@@ -98,7 +98,6 @@ const AddWebsiteForm = ({ setShowAddWebsiteForm, fetchData, editData }) => {
       setWebsiteName("");
       setUrl("");
       setCurrentBalance("");
-      setShowAddWebsiteForm(false);
       if (fetchData) await fetchData();
       await fetchWebsiteList();
     } catch (err) {

@@ -33,13 +33,12 @@ export async function POST(request) {
 
     const existingBank = await Bank.findOne({
       bank_name: uppercaseBankName,
-      created_by: uppercaseCreatedBy,
       group,
     });
 
     if (existingBank) {
       return NextResponse.json(
-        { Message: "Bank with this name already exists for this user" },
+        { Message: "Bank with this name already exists in this group" },
         { status: 400 }
       );
     }
@@ -79,11 +78,6 @@ export async function GET(request) {
     await connection();
 
     const baseFilter = { group };
-    if (userType === "user" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    }
 
     if (onlyNames === "true") {
       const allNames = await Bank.distinct("bank_name", baseFilter);
@@ -104,7 +98,8 @@ export async function GET(request) {
     const banks = await Bank.find(query, { __v: 0 })
       .sort(sort)
       .limit(limit)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     return NextResponse.json({ data: banks, totalData });
   } catch (error) {
@@ -126,9 +121,6 @@ export async function PUT(request) {
     await connection();
 
     const filter = { bank_name: bank_name.toUpperCase(), group };
-    if (userType === "user" && createdBy) {
-      filter.created_by = createdBy.toUpperCase();
-    }
 
     const result = await Bank.updateOne(
       filter,

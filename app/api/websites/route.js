@@ -28,13 +28,12 @@ export async function POST(request) {
 
     const existingWebsite = await Website.findOne({
       website_name: uppercaseWebsiteName,
-      created_by: uppercaseCreatedBy,
       group,
     });
 
     if (existingWebsite) {
       return NextResponse.json(
-        { Message: "Website with this name already exists for this user" },
+        { Message: "Website with this name already exists in this group" },
         { status: 400 }
       );
     }
@@ -72,11 +71,6 @@ export async function GET(request) {
     await connection();
 
     const baseFilter = { group };
-    if (userType === "user" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    } else if (userType === "admin" && createdBy) {
-      baseFilter.created_by = createdBy.toUpperCase();
-    }
 
     if (onlyNames === "true") {
       const allNames = await Website.distinct("website_name", baseFilter);
@@ -96,7 +90,8 @@ export async function GET(request) {
     const websites = await Website.find(query, { __v: 0 })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     return NextResponse.json({ data: websites, totalData });
   } catch (error) {
