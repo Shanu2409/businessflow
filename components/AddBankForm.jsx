@@ -143,7 +143,6 @@ const AddBankForm = ({ setShowAddBankForm, fetchData, editData }) => {
               name: "bank_name",
               placeholder: "Bank Name",
               type: "text",
-              disabled: !!editData,
             },
             {
               icon: <FaRegCreditCard className="text-gray-600 mr-3" />,
