@@ -152,7 +152,7 @@ const PageContent = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
               BK Details
             </h1>
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap justify-center gap-3">
               <button
                 className="bg-secondary text-white font-semibold px-6 py-2 rounded transition duration-300 shadow"
                 onClick={() => {
