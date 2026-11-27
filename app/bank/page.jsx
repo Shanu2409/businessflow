@@ -115,6 +115,32 @@ const PageContent = () => {
     }
   };
 
+  const [exportingEntries, setExportingEntries] = useState(false);
+  const handleExportEntries = async () => {
+    if (!user || exportingEntries) return;
+    setExportingEntries(true);
+    try {
+      const response = await axios.get(
+        `/api/banks/entries-export?group=${encodeURIComponent(user.group)}&search=${encodeURIComponent(searchValue)}`,
+        { responseType: "blob" }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "BK-entries.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("BK entries downloaded.");
+    } catch (error) {
+      console.error("Error exporting BK entries:", error);
+      toast.error("Failed to download BK entries.");
+    } finally {
+      setExportingEntries(false);
+    }
+  };
+
   const computedTotalPages = Math.ceil(totalData / itemsPerPage);
 
   return (
@@ -142,6 +168,15 @@ const PageContent = () => {
               >
                 <FaDownload />
                 <span>Export</span>
+              </button>
+              <button
+                id="download-bk-entries"
+                className="bg-green-600 text-white font-semibold px-6 py-2 rounded transition duration-300 shadow flex items-center space-x-2 disabled:opacity-60"
+                onClick={handleExportEntries}
+                disabled={exportingEntries}
+              >
+                <FaDownload />
+                <span>{exportingEntries ? "Preparing..." : "Download Entries (Excel)"}</span>
               </button>
             </div>
           </div>
