@@ -2,6 +2,7 @@ import connection from "@/lib/mongodb";
 import Bank from "@/models/bank";
 import Transaction from "@/models/transaction";
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
@@ -46,11 +47,36 @@ export async function GET(request) {
 
     // Sorted in the app (oldest first) so the database never needs a big
     // in-memory sort.
-    const docs = await Transaction.find(query, {
+    const projection = {
       createdAt: 1, bank_name: 1, transaction_type: 1, amount: 1,
       old_bank_balance: 1, effective_balance: 1, website_name: 1,
       username: 1, created_by: 1, group: 1, check: 1, re_check: 1,
-    }).lean();
+    };
+    // Read in parallel, non-overlapping _id ranges (read-only find calls) so a
+    // full export finishes well inside the serverless time limit.
+    const coll = Transaction.collection;
+    const [first] = await coll.find(query, { projection: { _id: 1 } }).sort({ _id: 1 }).limit(1).toArray();
+    let docs = [];
+    if (first) {
+      const [last] = await coll.find(query, { projection: { _id: 1 } }).sort({ _id: -1 }).limit(1).toArray();
+      const a = Math.floor(first._id.getTimestamp().getTime() / 1000);
+      const b = Math.floor(last._id.getTimestamp().getTime() / 1000);
+      const N = 8;
+      const step = Math.ceil((b - a + 1) / N);
+      const oid = (sec) => mongoose.Types.ObjectId.createFromTime(sec);
+      const parts = await Promise.all(
+        Array.from({ length: N }, (_, i) => {
+          const range =
+            i === N - 1
+              ? { $gte: oid(a + i * step), $lte: last._id }
+              : { $gte: oid(a + i * step), $lt: oid(a + (i + 1) * step) };
+          return coll
+            .find({ ...query, _id: range }, { projection, batchSize: 20000 })
+            .toArray();
+        })
+      );
+      docs = parts.flat();
+    }
     docs.sort(
       (a, b) =>
         new Date(a.createdAt || 0) - new Date(b.createdAt || 0) ||
@@ -118,4 +144,4 @@ export async function GET(request) {
     console.error("BK entries export error:", error);
     return NextResponse.json({ Message: error.message }, { status: 500 });
   }
-}
+      }
