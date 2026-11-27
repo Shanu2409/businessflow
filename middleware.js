@@ -77,6 +77,13 @@ export async function middleware(request) {
     }
   }
 
+  if (
+    pathname === "/preview-enter" &&
+    !(process.env.READ_ONLY_PREVIEW === "1" && secret)
+  ) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
   if (process.env.READ_ONLY_PREVIEW === "1" && pathname.startsWith("/api/")) {
     const method = request.method.toUpperCase();
     const isRead = method === "GET" || method === "HEAD" || method === "OPTIONS";
