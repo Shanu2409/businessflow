@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 // Optional site-wide access gate (HTTP Basic Auth).
-// Active only when ACCESS_USER and ACCESS_PASSWORD are set in the environment.
+// Active when ACCESS_USER and ACCESS_PASSWORD are set in the environment.
+// If ACCESS_GATE=required and the credentials are missing, every request is refused (503).
 // Covers every page and every /api route. Remove this file to turn it off.
 function safeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -13,7 +14,12 @@ function safeEqual(a, b) {
 export function proxy(request) {
   const user = process.env.ACCESS_USER;
   const pass = process.env.ACCESS_PASSWORD;
-  if (!user || !pass) return NextResponse.next();
+  if (!user || !pass) {
+    if (process.env.ACCESS_GATE === "required") {
+      return new NextResponse("Access gate not configured", { status: 503 });
+    }
+    return NextResponse.next();
+  }
 
   const header = request.headers.get("authorization") || "";
   if (header.startsWith("Basic ")) {
